@@ -3,7 +3,7 @@
 
 # The nodes are the cities, and each city has 1 or more building slots 
 # building slots can accept only certain types of buildings
-# the types of buildings in the game are: coal mine, iron works, brewery, manufacturer, pottery, cotton mill
+# the types of buildings in the game are: coal mine, iron works, brewery, manufactory, pottery, cotton mill
 
 # each building type has different properties depending on its level, the 6 main properties are:
 # its price in coins, its price in resources(coal or iron), the victory points it provides once sold,
@@ -24,6 +24,16 @@
 # some building slots may be empty,so if you have a link to that hub you can't sell any 
 # building if the building slots are empty
 
+from enum import Enum
+
+class IndustryType(Enum):
+    IRONWORKS = 0
+    COALMINE = 1
+    BREWERY = 2 
+    MANUFACTORY = 3
+    COTTONMILL = 4
+    POTTERY = 5
+
 class TradingHub:
     def __init__(self, name, bonus, buildings):
         self.name = name
@@ -31,20 +41,17 @@ class TradingHub:
         self.buildings = buildings
 
 class Building:
-    def __init__(self, industry_type, income, victory_points, level, price, active, link_bonus, beers=0, resources=0):
+    def __init__(self, industry_type, stats, price, beers=0, resources=0):
         self.industry_type = industry_type
-        self.income = income
-        self.victory_points = victory_points
-        self.level = level
+        self.stats = stats
         self.price = price
-        self.active = active
-        self.link_bonus = link_bonus
         self.beers = beers # number of beers required for it to be sold
         self.resources = resources
 
 class BuildingSlot:
-    def __init__(self, industry):
-        self.industry = industry
+    def __init__(self, building, player_id):
+        self.building = building
+        self.player_id = player_id
 
 class Square:
     def __init__(self):
@@ -61,6 +68,68 @@ class City:
     def add_neighbor(self, neighbor, connection_type):
         self.adjacent[neighbor] = connection_type
 
+buildings = [[[IndustryType.IRONWORKS,( 3, 3, 1), (5, 1, 0), 0, 4],
+              [IndustryType.IRONWORKS,( 5, 3, 1), (7, 1, 0), 0, 4],
+              [IndustryType.IRONWORKS,( 7, 2, 1), (9, 1, 0), 0, 5],
+              [IndustryType.IRONWORKS,( 9, 1, 1),(12, 1, 0), 0, 6]],
+             [[IndustryType.COALMINE,( 1, 4, 2), (5, 0, 0), 0, 2],
+              [IndustryType.COALMINE,( 2, 7, 1), (7, 0, 0), 0, 3],
+              [IndustryType.COALMINE,( 3, 6, 1), (8, 0, 1), 0, 4],
+              [IndustryType.COALMINE,( 4, 5, 1),(10, 0, 1), 0, 5]],
+             [[IndustryType.BREWERY,( 4, 4, 2), (5, 0, 1), 0, 1],
+              [IndustryType.BREWERY,( 5, 5, 2), (7, 0, 1), 0, 1],
+              [IndustryType.BREWERY,( 7, 5, 2), (9, 0, 1), 0, 1],
+              [IndustryType.BREWERY,(10,5, 2), (9, 0, 1), 0, 1]], # will have the modify the number of resources produced to 2 in second phase
+             [[IndustryType.MANUFACTORY,( 5, 5, 1), (12, 0, 0), 1, 0],
+              [IndustryType.MANUFACTORY,( 5, 4, 2), (14, 1, 0), 1, 0],
+              [IndustryType.MANUFACTORY,( 9, 3, 1), (16, 1, 1), 1, 0],
+              [IndustryType.MANUFACTORY,(12, 2, 1), (18, 1, 1), 1, 0]],
+             [[IndustryType.POTTERY,(10, 5, 1), (17, 0, 1), 1, 0],
+              [IndustryType.POTTERY,( 1, 1, 1), ( 0, 1, 0), 1, 0],
+              [IndustryType.POTTERY,(11, 5, 1), (22, 2, 0), 2, 0],
+              [IndustryType.POTTERY,( 1, 1, 1), ( 0, 1, 0), 1, 0],
+              [IndustryType.POTTERY,(20, 5, 1), (24, 2, 0), 2, 0]],
+             [[IndustryType.COTTONMILL,( 3, 5, 2), ( 8, 1, 0), 1, 0],
+              [IndustryType.COTTONMILL,( 5, 1, 1), (10, 0, 1), 1, 0],
+              [IndustryType.COTTONMILL,( 4, 4, 0), (12, 2, 0), 0, 0],
+              [IndustryType.COTTONMILL,( 3, 6, 1), ( 8, 0, 1), 1, 0],
+              [IndustryType.COTTONMILL,( 8, 2, 2), (16, 1, 0), 2, 0],
+              [IndustryType.COTTONMILL,( 7, 6, 1), (20, 0, 0), 1, 0],
+              [IndustryType.COTTONMILL,( 9, 4, 0), (16, 1, 1), 0, 0],
+              [IndustryType.COTTONMILL,(11, 1, 0), (20, 0, 2), 1, 0]]]
+
 class Board:
+    iron_works = []
+    coal_mines = []
+    breweries = []
+    manufactories = []
+    potteries = []
+    cotton_mills = []
+
     def __init__(self):
         pass
+    
+    def createIronWorks(self):
+        building = Building(IndustryType.IRONWORKS, 4, 3, 1, (7, 1, 0) , 1, 0, 4)
+        self.iron_works.append(building)
+        building = Building(IndustryType.IRONWORKS, )
+    def createCoalMines(self):
+        pass 
+    def createBreweries(self):
+        pass
+    def createManufactories(self):
+        pass 
+    def createPotteries(self):
+        pass 
+    def createCottonMills(self):
+        pass
+    
+    def createBuildings(self):
+        createIronWorks(self)
+        createCoalMines(self)
+        createBreweries(self)
+        createManufactories(self)
+        createPotteries(self)
+        createCottonMills(self)
+
+    
