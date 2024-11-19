@@ -1,3 +1,9 @@
+# classes related to storing player state
+# such as victory points, money, income, hand (the cards you have), buildings available
+# to reach a higher level building you first have to exhaust the lower level ones
+
+# there are also actions you can take every round
+
 from board import IndustryType
 
 class Building:
@@ -39,14 +45,6 @@ buildings = [[[IndustryType.IRONWORKS,( 3, 3, 1), (5, 1, 0), 0, 4, 1],
               [IndustryType.COTTONMILL,(11, 1, 0), (20, 0, 2), 1, 0, 2]]]
 
 class Player:
-    def __init__(self):
-        self.iron_works = []
-        self.coal_mines = []
-        self.breweries = []
-        self.potteries = []
-        self.manufactories = []
-        self.cotton_mills = []
-
     def createBuildingType(self, i):
         for building in buildings[i]:
             for i in range(building[5]):
@@ -90,3 +88,34 @@ class Player:
         self.createManufactories()
         self.createPotteries()
         self.createCottonMills()
+
+    def __init__(self):
+        self.iron_works = []
+        self.coal_mines = []
+        self.breweries = []
+        self.potteries = []
+        self.manufactories = []
+        self.cotton_mills = []
+
+        self.createBuildings()
+        self.victory_points = 0
+        self.income = 0
+        self.coins = 17
+    
+    def build(self):
+        pass
+
+    def network(self):
+        pass
+
+    def develop(self):
+        pass
+
+    def sell(self):
+        pass
+
+    def loan(self):
+        pass
+
+    def scout(self):
+        pass

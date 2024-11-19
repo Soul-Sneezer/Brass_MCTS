@@ -1,5 +1,5 @@
 # Representation of the board of the game 'Brass -Birmingham'
-# it's basically a undirected graph with extra properties
+# it's basically an undirected graph with extra properties
 
 # The nodes are the cities, and each city has 1 or more building slots 
 # building slots can accept only certain types of buildings
@@ -8,6 +8,7 @@
 # each building type has different properties depending on its level, the 6 main properties are:
 # its price in coins, its price in resources(coal or iron), the victory points it provides once sold,
 # the income it provides every round, once sold, how many points the building grants to adjacent links
+# once again, after you sell it
 # and how many beers you need to use to sell that building
 
 # iron works, coal mines and breweries don't require beers in order to be sold, they only need to exhaust
