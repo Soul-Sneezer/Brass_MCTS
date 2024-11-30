@@ -5,6 +5,7 @@
 # there are also actions you can take every round
 
 from board import IndustryType
+from game import Game
 
 class Building:
     def __init__(self, industry_type, stats, price, beers=0, resources=0):
@@ -101,21 +102,45 @@ class Player:
         self.victory_points = 0
         self.income = 0
         self.coins = 17
-    
-    def build(self):
+
+        self.cards = []
+        self.discard_pile = [] 
+
+    def build(self, build_card):
         pass
 
-    def network(self):
+    def network(self, targets):         # expects 3 cards to discard
+        self.discardCard(targets[0])
+        self.discardCard(targets[1])
+        self.discardCard(targets[2])
         pass
 
     def develop(self):
         pass
 
-    def sell(self):
+    def sell(self, target):
         pass
 
     def loan(self):
+        self.coins += 30
+        self.adjustIncome(-3)
         pass
 
     def scout(self):
         pass
+
+    def drawCard(self, card):
+        self.cards.append(card)
+
+    def discardCard(self, target): # discard a card from hand
+        self.discard_pile.append(target)
+        self.cards.remove(target) # find a way to choose which card to discard
+
+    def adjustIncome(self, levels, steps = 0):
+        # up to income level 0, there is one step between levels VP 0 - 10
+        # up to income level 10, there are 2 steps between levels VP 11 -30
+        # up to income level 20, there are 3 steps between levels VP 31 - 60
+        # up to income level 29, there are 4 steps between levels VP 61 - 96
+        # for income level 30, there are 3 steps, and I guess you can't have more than 30 income VP 97 - 99
+        self.income += steps
+
