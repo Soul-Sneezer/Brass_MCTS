@@ -36,9 +36,7 @@ class Card:
         self.card_type = card_type
         self.content = content
 
-game_cards = [[CardType.WILD_LOCATION, None, 4],
-              [CardType.WILD_INDUSTRY, None, 4],
-              [CardType.INDUSTRY, (board.IndustryType.BREWERY), 5],
+game_cards = [[CardType.INDUSTRY, (board.IndustryType.BREWERY), 5],
               [CardType.INDUSTRY, (board.IndustryType.POTTERY), 3],
               [CardType.INDUSTRY, (board.IndustryType.IRONWORKS), 4],
               [CardType.INDUSTRY, (board.IndustryType.COALMINE), 3],
@@ -66,11 +64,10 @@ game_cards = [[CardType.WILD_LOCATION, None, 4],
 
 
 class Game:
-    def __init__(self, number_of_players):
+    def __init__(self, number_of_players, first_era):
+        self.first_era = first_era
         self.can_overbuild_mines = False
         self.cards = []
-        self.wildcards_industry = []
-        self.wildcards_location = []
         self.createCards(number_of_players)
         self.number_of_players = number_of_players
         self.board = board.Board()    
@@ -87,15 +84,7 @@ class Game:
         else:
             raise Exception("Wrong number of players!")
 
-        for i in range(game_cards[0][2]):
-            new_card = Card(game_cards[0][0], game_cards[0][1])
-            self.wildcards_location.append(new_card)
-
-        for i in range(game_cards[1][2]):
-            new_card = Card(game_cards[1][0], game_cards[1][1])
-            self.wildcards_industry.append(new_card)
-
-        for i in range(2, card_packs):
+        for i in range(card_packs):
             for j in range(game_cards[i][2]):
                 new_card = Card(game_cards[i][0], game_cards[i][1])
                 self.cards.append(new_card)

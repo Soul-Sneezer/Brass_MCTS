@@ -53,7 +53,7 @@ class TradingHub:
         self.squares = []
 
     def addSquare(self, square):
-        self.squares.append(square)
+        self.squares.append(square)https://towardsdatascience.com/the-mostly-complete-chart-of-neural-networks-explained-3fb6f2367464?gi=8d4f2e42595b
 
 class Market:
     def __init__(self, resources, maximum_resources):
@@ -66,26 +66,39 @@ class Market:
             resources_spent = resources_spent + 1
         return 1 + resources_spent / 2
 
-class BuildingSlot:
-    def __init__(self, building, player_id):
+class BuildingInstance:
+    def __init__(self, building, player_id, sold):
         self.building = building
         self.player_id = player_id
+        self.sold = False
 
 class Square:
     def __init__(self, buildings):
         self.building_types = buildings
+   
+class Link: 
+    def __init__(self, connected_cities, link_type):
+        self.owner_id = None
+        self.link_type = link_type
+        self.points = 0
+        for city in connected_cities:
+            self.cities.append(city)
+            city.add_connection(self)
     
+    def change_ownership(self, owner):
+        self.owner_id = owner
+
 class City:
     def __init__(self, name):
         self.name = name
-        self.adjacent = {}
+        self.adjacent = []
         self.squares = []
     
     def add_square(self, square):
         self.squares.append(square)
 
-    def add_neighbor(self, neighbor, connection_type):
-        self.adjacent[neighbor] = connection_type
+    def add_connection(self, connection):
+        self.adjacent.append(connection)
 
 class Board:
     iron_works = []
@@ -193,104 +206,53 @@ class Board:
         worcester.add_square(Square((IndustryType.MANUFACTORY)))
 
         unnamed_city1.add_square(Square((IndustryType.BREWERY)))
-
-        stoke_on_trent.add_neighbor(stone, LinkType.BOTH)
-        stoke_on_trent.add_neighbor(leek, LinkType.BOTH)
         
-        leek.add_neighbor(belper, LinkType.RAIL)
-        leek.add_neighbor(stoke_on_trent, LinkType.BOTH)
-
-        belper.add_neighbor(leek, LinkType.RAIL)
-        belper.add_neighbor(derby, LinkType.BOTH)
-
-        derby.add_neighbor(belper, LinkType.BOTH)
-        derby.add_neighbor(burton_on_trent, LinkType.BOTH)
-        derby.add_neighbor(uttoxeter, LinkType.RAIL)
-
-        uttoxeter.add_neighbor(derby, LinkType.RAIL)
-        uttoxeter.add_neighbor(stone, LinkType.RAIL)
-
-        burton_on_trent.add_neighbor(derby, LinkType.BOTH)
-        burton_on_trent.add_neighbor(stone, LinkType.BOTH)
-        burton_on_trent.add_neighbor(tamworth, LinkType.BOTH)
-        burton_on_trent.add_neighbor(cannock, LinkType.RAIL)
-        burton_on_trent.add_neighbor(walsall, LinkType.CANAL)
-
-        stone.add_neighbor(burton_on_trent, LinkType.BOTH)
-        stone.add_neighbor(stafford, LinkType.BOTH)
-        stone.add_neighbor(uttoxeter, LinkType.RAIL)
-        stone.add_neighbor(stoke_on_trent, LinkType.BOTH)
-
-        stafford.add_neighbor(stone, LinkType.BOTH)
-        stafford.add_neighbor(cannock, LinkType.BOTH)
-
-        cannock.add_neighbor(stafford, LinkType.BOTH)
-        cannock.add_neighbor(wolverhampton, LinkType.BOTH)
-        cannock.add_neighbor(unnamed_city0, LinkType.BOTH)
-        cannock.add_neighbor(burton_on_trent, LinkType.RAIL)
-
-        unnamed_city0.add_neighbor(cannock, LinkType.BOTH)
-
-        tamworth.add_neighbor(burton_on_trent, LinkType.BOTH)
-        tamworth.add_neighbor(nuneaton, LinkType.BOTH)
-        tamworth.add_neighbor(birmingham, LinkType.BOTH)
-        tamworth.add_neighbor(walsall, LinkType.RAIL)
-
-        nuneaton.add_neighbor(tamworth, LinkType.BOTH)
-        nuneaton.add_neighbor(birmingham, LinkType.RAIL)
-        nuneaton.add_neighbor(coventry, LinkType.RAIL)
-
-        coventry.add_neighbor(nuneaton, LinkType.RAIL)
-        coventry.add_neighbor(birmingham, LinkType.BOTH)
-
-        birmingham.add_neighbor(coventry, LinkType.BOTH)
-        birmingham.add_neighbor(nuneaton, LinkType.RAIL)
-        birmingham.add_neighbor(tamworth, LinkType.BOTH)
-        birmingham.add_neighbor(walsall, LinkType.BOTH)
-        birmingham.add_neighbor(redditch, LinkType.RAIL)
-        birmingham.add_neighbor(dudley, LinkType.BOTH)
-        birmingham.add_neighbor(worcester, LinkType.BOTH)
-
-        walsall.add_neighbor(birmingham, LinkType.BOTH)
-        walsall.add_neighbor(tamworth, LinkType.RAIL)
-        walsall.add_neighbor(burton_on_trent, LinkType.CANAL)
-        walsall.add_neighbor(cannock, LinkType.BOTH)
-        walsall.add_neighbor(wolverhampton, LinkType.BOTH)
-
-        dudley.add_neighbor(birmingham, LinkType.BOTH)
-        dudley.add_neighbor(wolverhampton, LinkType.BOTH)
-        dudley.add_neighbor(kidderminster, LinkType.BOTH)
-
-        redditch.add_neighbor(birmingham, LinkType.RAIL)
-
-        worcester.add_neighbor(birmingham, LinkType.BOTH)
-        worcester.add_neighbor(kidderminster, LinkType.BOTH)
-        worcester.add_neighbor(unnamed_city1, LinkType.BOTH)
-
-        unnamed_city1.add_neighbor(worcester, LinkType.BOTH)
-        unnamed_city1.add_neighbor(kidderminster, LinkType.BOTH)
-
-        wolverhampton.add_neighbor(walsall, LinkType.BOTH)
-        wolverhampton.add_neighbor(dudley, LinkType.BOTH)
-        wolverhampton.add_neighbor(coalbrookdale, LinkType.BOTH)
-        wolverhampton.add_neighbor(cannock, LinkType.BOTH)
-
-        coalbrookdale.add_neighbor(wolverhampton, LinkType.BOTH)
-        coalbrookdale.add_neighbor(kidderminster, LinkType.BOTH)
-
         nottingham = TradingHub("Nottingham", (BonusType.VICTORY_POINTS, 3))
         oxford = TradingHub("Oxford", (BonusType.INCOME, 2))
         gloucester = TradingHub("Gloucester", (BonusType.INNOVATION, 1))
         shrewsbury = TradingHub("Shrewsbury", (BonusType.VICTORY_POINTS, 4)) 
         warrington = TradingHub("Warrington", (BonusType.COINS, 5))
-       
-        derby.add_neighbor(nottingham, LinkType.BOTH)
-        stoke_on_trent.add_neighbor(warrington, LinkType.BOTH)
-        birmingham.add_neighbor(oxford, LinkType.BOTH)
-        redditch.add_neighbor(oxford, LinkType.BOTH)
-        redditch.add_neighbor(gloucester, LinkType.BOTH)
-        worcester.add_neighbor(gloucester, LinkType.BOTH)
-        coalbrookdale.add_neighbor(shrewsbury, LinkType.BOTH)
+
+        shrewsbury_coalbrookdale = Link([coalbrookdale, shrewsbury], LinkType.BOTH)
+        coalbrookdale_wolverhampton = Link([coalbrookdale, wolverhampton], LinkType.BOTH)
+        coalbrookdale_kidderminster = Link([coalbrookdale, wolverhampton], LinkType.BOTH)
+        kidderminster_worcester = Link([kidderminster, worcester, unnamed_city1], LinkType.BOTH)
+        kidderminster_dudley = Link([kidderminster, dudley], LinkType.BOTH)
+        worcester_gloucester = Link([worcester, gloucester], LinkType.BOTH)
+        worcester_birmingham = Link([worcester, birmingham], LinkType.BOTH)
+        dudley_wolverhampton = Link([dudley, wolverhampton], LinkType.BOTH)
+        dudley_birmingham = Link([dudley, birmingham], LinkType.BOTH)
+        wolverhampton_cannock = Link([wolverhampton, cannock], LinkType.BOTH)
+        wolverhampton_walsall = Link([wolverhampton, walsall], LinkType.BOTH)
+        walsall_birmingham = Link([walsall, birmingham], LinkType.BOTH)
+        gloucester_redditch = Link([gloucester, redditch], LinkType.BOTH)
+        redditch_birmingham = Link([redditch, birmingham], LinkType.RAIL)
+        redditch_oxford = Link([redditch, oxford], LinkType.BOTH)
+        oxford_birmingham = Link([oxford, birmingham], LinkType.BOTH)
+        birmingham_coventry = Link([birmingham, coventry], LinkType.BOTH)
+        coventry_nuneaton = Link([coventry, nuneaton], LinkType.RAIL)
+        birmingham_nuneaton = Link([birmingham, nuneaton], LinkType.RAIL)
+        birmingham_tamworth = Link([birmingham, tamworth], LinkType.BOTH)
+        nuneaton_tamworth = Link([nuneaton, tamworth], LinkType.BOTH)
+        tamworth_walsall = Link[tamworth, walsall], LinkType.BOTH)
+        tamworth_burton = Link([tamworth, buton_on_trent], LinkType.BOTH)
+        burton_walsall = Link([burton_on_trent, walsall], LinkType.CANAL)
+        burton_cannock = Link([burton_on_trent, cannock], LinkType.RAIL)
+        burton_derby = Link([burton_on_trent, derby], LinkType.BOTH)
+        burton_stone = Link([burton_on_trent, stone], LinkType.BOTH)
+        cannock_walsall = Link([cannock, walsall], LinkType.BOTH)
+        cannock_wolverhampton = Link([cannock, wolverhampton], LinkType.BOTH)
+        cannock_unnamed_city10 = Link([cannock, unnamed_city0], LinkType.BOTH)
+        cannock_stafford = Link([cannock, stafford], LinkType.BOTH)
+        stafford_stone = Link([stafford, stone], LinkType.BOTH)
+        stone_stoke = Link([stone, stoke_on_trent], LinkType.BOTH)
+        stone_uttoxeter = Link([stone, uttoxeter], LinkType.RAIL)
+        derby_uttoxeter = Link([derby, uttoxeter], LinkType.RAIL)
+        derby_nottingham = Link([derby, nottingham], LinkType.BOTH)
+        derby_belper = Link([derby, belper], LinkType.BOTH)
+        stoke_warrington = Link([stoke_on_trent, warrington], LinkType.BOTH)
+        stoke_leek = Link([stoke_on_trent, leek], LinkType.BOTH)
+        leek_belper = Link([leek, belper], LinkType.RAIL)
 
         self.cities.append(stoke_on_trent)
         self.cities.append(stone)

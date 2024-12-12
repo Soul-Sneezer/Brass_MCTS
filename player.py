@@ -5,6 +5,7 @@
 # there are also actions you can take every round
 
 from board import IndustryType
+from board import BuildingInstance
 from game import Game
 
 class Building:
@@ -90,7 +91,8 @@ class Player:
         self.createPotteries()
         self.createCottonMills()
 
-    def __init__(self):
+    def __init__(self, id):
+        self.id = id
         self.iron_works = []
         self.coal_mines = []
         self.breweries = []
@@ -98,36 +100,52 @@ class Player:
         self.manufactories = []
         self.cotton_mills = []
 
+        self.buildings_on_board = []
+
         self.createBuildings()
         self.victory_points = 0
         self.income = 0
         self.coins = 17
 
+        self.has_industry_wildcard = False
+        self.has_city_wildcard = False
         self.cards = []
-        self.discard_pile = [] 
+        self.discard_pile = [] # could be useful for checking the probability of getting a certain card 
 
-    def build(self, build_card):
+    def build(self, location, building_type): # builds a building
+        new_building = Building()
+        self.buildings_on_board.append(new_building) 
+        # check era, if is second era check if building is level 1, check if player has money, check if slot is available, spend money, build
+
+    def network(self, city1, city2):         # build a canal/rail
+        for link in city1.adjacent:
+            for city in links.cities:
+                if city == city2:
+                    links.changeOwnership(self.id)
+                    if game # check era, check if the player has the necessary money, check if link is available, spend money, change link owner
+                    return
+
+    def develop(self): # removes one or two cards(lowest level possible) from the available buildings, granting access to higher level buildings
         pass
 
-    def network(self, targets):         # expects 3 cards to discard
-        self.discardCard(targets[0])
-        self.discardCard(targets[1])
-        self.discardCard(targets[2])
-        pass
-
-    def develop(self):
-        pass
-
-    def sell(self, target):
-        pass
+    def sell(self, target): # the target is a building
+        target.sold = True
+        self.income += target.stats[1]
+        self.victory_points += target.stats[0]
 
     def loan(self):
         self.coins += 30
-        self.adjustIncome(-3)
-        pass
+        self.adjustIncome(loan=True)
 
-    def scout(self):
-        pass
+    def scout(self, cards):
+        if len(cards) != 3:
+            return -1
+
+        for card in cards:
+            self.discardCard(card)
+
+        self.has_city_wildcard = True 
+        self.has_industry_wildcard = True # basically you draw wildcards, but I don't represent them as usual cards because its easier to simply create 2 bools
 
     def drawCard(self, card):
         self.cards.append(card)
@@ -135,12 +153,39 @@ class Player:
     def discardCard(self, target): # discard a card from hand
         self.discard_pile.append(target)
         self.cards.remove(target) # find a way to choose which card to discard
+        
+    # up to income level 0, there is one step between levels VP 0 - 10
+    # up to income level 10, there are 2 steps between levels VP 11 -30
+    # up to income level 20, there are 3 steps between levels VP 31 - 60
+    # up to income level 29, there are 4 steps between levels VP 61 - 96
+    # for income level 30, there are 3 steps, and I guess you can't have more than 30 income VP 97 - 99
 
-    def adjustIncome(self, levels, steps = 0):
-        # up to income level 0, there is one step between levels VP 0 - 10
-        # up to income level 10, there are 2 steps between levels VP 11 -30
-        # up to income level 20, there are 3 steps between levels VP 31 - 60
-        # up to income level 29, there are 4 steps between levels VP 61 - 96
-        # for income level 30, there are 3 steps, and I guess you can't have more than 30 income VP 97 - 99
-        self.income += steps
+    def incomeStepsToLevel(income):
+        if income > 60:
+            return 21 + int((income - 61) / 4)
+        elif income > 30:
+            return 11 + int((income - 31) / 3)
+        elif income > 10:
+            return 1 + int((income - 11) / 2)
+        else
+            return (income - 10)
+
+    def incomeLevelToSteps(level):
+        if level == 30:
+            return 99
+        elif level > 20:
+            return 60 + (level - 20) * 4
+        elif level > 10:
+            return 30 + (level - 10) * 3 
+        elif level > 0:
+            return 10 + level * 2
+        else:
+            return 10 + level
+
+    def adjustIncome(self, loan = False, steps = 0):
+                
+        if loan:
+            self.income = incomeLevelToSteps(incomeStepsToLevel(self.income) - 3)
+        else:
+            self.income += steps
 
