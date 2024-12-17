@@ -75,6 +75,7 @@ class BuildingInstance:
 class Square:
     def __init__(self, buildings):
         self.building_types = buildings
+        self.taken = False
    
 class Link: 
     def __init__(self, connected_cities, link_type):
@@ -99,6 +100,15 @@ class City:
 
     def add_connection(self, connection):
         self.adjacent.append(connection)
+
+    def isAvailable(self, building_type):
+        for square in squares:
+            for building in square.building_types:
+                if building_type == building and square.taken == False:
+                    return True
+
+        return False
+
 
 class Board:
     iron_works = []

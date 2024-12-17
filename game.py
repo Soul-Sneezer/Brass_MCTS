@@ -64,8 +64,8 @@ game_cards = [[CardType.INDUSTRY, (board.IndustryType.BREWERY), 5],
 
 
 class Game:
-    def __init__(self, number_of_players, first_era):
-        self.first_era = first_era
+    def __init__(self, number_of_players):
+        self.first_era = True
         self.can_overbuild_mines = False
         self.cards = []
         self.createCards(number_of_players)
@@ -91,6 +91,11 @@ class Game:
 
         random.shuffle(self.cards) # shuffle the deck
 
+    def getCoalPrice():
+        return self.board.coal_market.getPrice()
+
+    def getIronPrice():
+        return self.board.iron_market.getPrice()
     
 class Simulation:
     def __init__(self, number_of_players):

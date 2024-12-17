@@ -16,6 +16,9 @@ class Building:
         self.beers = beers # number of beers required for it to be sold
         self.resources = resources
 
+    def getCost(self):
+        return self.price[0] + self.price[1] * game.getCoalPrice() + self.price[2] * game.getIronPrice() # i also need to check if there is a link to a mine :C
+
 buildings = [[[IndustryType.IRONWORKS,( 3, 3, 1), (5, 1, 0), 0, 4, 1],
               [IndustryType.IRONWORKS,( 5, 3, 1), (7, 1, 0), 0, 4, 1],
               [IndustryType.IRONWORKS,( 7, 2, 1), (9, 1, 0), 0, 5, 1],
@@ -48,7 +51,7 @@ buildings = [[[IndustryType.IRONWORKS,( 3, 3, 1), (5, 1, 0), 0, 4, 1],
 
 class Player:
     def createBuildingType(self, i):
-        for building in buildings[i]:
+        for building in reversed(buildings[i]):
             for i in range(building[5]):
                 industry_type = building[0]
                 stats = building[1]
@@ -112,12 +115,27 @@ class Player:
         self.cards = []
         self.discard_pile = [] # could be useful for checking the probability of getting a certain card 
 
-    def build(self, location, building_type): # builds a building
-        new_building = Building()
-        self.buildings_on_board.append(new_building) 
-        # check era, if is second era check if building is level 1, check if player has money, check if slot is available, spend money, build
+    def canBuild(self, location, building):
+        if not(game.first_era) and building.level == 1 and building.industry_type != IndustryType.POTTERY:
+            return False    
+        if not(location.isAvailable(building.industry_type)):
+            return False
+        if player.money < building.getCost():
+            return False
+
+        return True
+
+    def build(self, location, building): # builds a building
+        if self.canBuild(location, building):
+            player.money -= getCost(building)
+            new_building = Building()
+            self.buildings_on_board.append(new_building)
+            return True
+
+        return False
 
     def network(self, city1, city2):         # build a canal/rail
+        price = 3
         for link in city1.adjacent:
             for city in links.cities:
                 if city == city2:
@@ -125,8 +143,44 @@ class Player:
                     if game # check era, check if the player has the necessary money, check if link is available, spend money, change link owner
                     return
 
-    def develop(self): # removes one or two cards(lowest level possible) from the available buildings, granting access to higher level buildings
-        pass
+    def develop(self, industry_type, once=True): # removes one or two cards(lowest level possible) from the available buildings, granting access to higher level buildings
+        price = game.getIronPrice()
+        if not(once):
+            price *= 2
+
+        if self.money < price:
+            return False
+
+        self.money -= price
+
+        if industry_type == IndustryType.IRONWORKS and iron_works.size() > 1:
+            self.iron_works.pop()
+            if not(once) and iron_works.size() > 1:
+                self.iron_works.pop()
+        elif industry_type == IndustryType.COALMINE and coal_mines.size() > 1:
+            self.coal_mines.pop()
+            if not(once) and coal_mines.size() > 1:
+                self.iron_works.pop()
+        elif industry_type == IndustryType.POTTERY and potteries.size() > 1:
+            self.potteries.pop()
+            if not(once) and potteries.size() > 1:
+                self.potteries.pop()
+        elif industry_type == IndustryType.MANUFACTORY and manufactories.size() > 1:
+            self.manufactories.pop()
+            if not(once) and manufactories.size() > 1:
+                self.manufactories.pop()
+        elif industry_type == IndustryType.COTTONMILL and cotton_mills.size() > 1:
+            self.cotton_mills.pop()
+            if not(once) and cotton_mills.size() > 1:
+                self.cotton_mills.pop()
+        elif industry_type == IndustryType.BREWERY and breweries.size() > 1:
+            self.breweries.pop()
+            if not(once) and breweries.size() > 1:
+                self.breweries.pop()
+        else
+            return False # Unknown industry type
+
+        return True
 
     def sell(self, target): # the target is a building
         target.sold = True
