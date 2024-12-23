@@ -65,23 +65,37 @@ class Market:
         if resources_spent % 2 == 1:
             resources_spent = resources_spent + 1
         return 1 + resources_spent / 2
+    
+    def removeResource(self):
+        if self.resources != 0:
+            self.resources -= 1
+
+    def addResource(self):
+        if self.resources != self.maximum_resources:
+            self.resources += 1
+            return self.getPrice()
+
+        return 0
 
 class BuildingInstance:
-    def __init__(self, building, player_id, sold):
+    def __init__(self, building, player_id, sold, location):
         self.building = building
         self.player_id = player_id
         self.sold = False
+        self.location = location
 
 class Square:
-    def __init__(self, buildings):
+    def __init__(self, buildings, parent):
         self.building_types = buildings
         self.taken = False
+        self.parent = parent
    
 class Link: 
     def __init__(self, connected_cities, link_type):
         self.owner_id = None
         self.link_type = link_type
         self.points = 0
+        self.cities = []
         for city in connected_cities:
             self.cities.append(city)
             city.add_connection(self)
@@ -95,14 +109,14 @@ class City:
         self.adjacent = []
         self.squares = []
     
-    def add_square(self, square):
-        self.squares.append(square)
+    def add_square(self, buildings):
+        self.squares.append(Square(buildings, self))
 
     def add_connection(self, connection):
         self.adjacent.append(connection)
 
     def isAvailable(self, building_type):
-        for square in squares:
+        for square in self.squares:
             for building in square.building_types:
                 if building_type == building and square.taken == False:
                     return True
@@ -146,76 +160,76 @@ class Board:
         unnamed_city0 = City("City0")
         unnamed_city1 = City("City1")
 
-        stoke_on_trent.add_square(Square((IndustryType.MANUFACTORY, IndustryType.COTTONMILL)))
-        stoke_on_trent.add_square(Square((IndustryType.POTTERY, IndustryType.IRONWORKS)))
-        stoke_on_trent.add_square(Square((IndustryType.COTTONMILL)))
+        stoke_on_trent.add_square((IndustryType.MANUFACTORY, IndustryType.COTTONMILL))
+        stoke_on_trent.add_square((IndustryType.POTTERY, IndustryType.IRONWORKS))
+        stoke_on_trent.add_square((IndustryType.COTTONMILL))
 
-        leek.add_square(Square((IndustryType.MANUFACTORY, IndustryType.COTTONMILL)))
-        leek.add_square(Square((IndustryType.MANUFACTORY, IndustryType.COALMINE)))
+        leek.add_square((IndustryType.MANUFACTORY, IndustryType.COTTONMILL))
+        leek.add_square((IndustryType.MANUFACTORY, IndustryType.COALMINE))
 
-        belper.add_square(Square((IndustryType.MANUFACTORY, IndustryType.COTTONMILL)))
-        belper.add_square(Square((IndustryType.COALMINE)))
-        belper.add_square(Square((IndustryType.POTTERY)))
+        belper.add_square((IndustryType.MANUFACTORY, IndustryType.COTTONMILL))
+        belper.add_square((IndustryType.COALMINE))
+        belper.add_square((IndustryType.POTTERY))
 
-        stone.add_square(Square((IndustryType.MANUFACTORY, IndustryType.BREWERY)))
-        stone.add_square(Square((IndustryType.COTTONMILL, IndustryType.COALMINE)))
+        stone.add_square((IndustryType.MANUFACTORY, IndustryType.BREWERY))
+        stone.add_square((IndustryType.COTTONMILL, IndustryType.COALMINE))
 
-        uttoxeter.add_square(Square((IndustryType.COTTONMILL, IndustryType.BREWERY)))
-        uttoxeter.add_square(Square((IndustryType.MANUFACTORY, IndustryType.BREWERY)))
+        uttoxeter.add_square((IndustryType.COTTONMILL, IndustryType.BREWERY))
+        uttoxeter.add_square((IndustryType.MANUFACTORY, IndustryType.BREWERY))
 
-        derby.add_square(Square((IndustryType.MANUFACTORY, IndustryType.BREWERY)))
-        derby.add_square(Square((IndustryType.MANUFACTORY, IndustryType.COTTONMILL)))
-        derby.add_square(Square((IndustryType.IRONWORKS)))
+        derby.add_square((IndustryType.MANUFACTORY, IndustryType.BREWERY))
+        derby.add_square((IndustryType.MANUFACTORY, IndustryType.COTTONMILL))
+        derby.add_square((IndustryType.IRONWORKS))
 
-        burton_on_trent.add_square(Square((IndustryType.COTTONMILL, IndustryType.COALMINE)))
-        burton_on_trent.add_square(Square((IndustryType.BREWERY)))
+        burton_on_trent.add_square((IndustryType.COTTONMILL, IndustryType.COALMINE))
+        burton_on_trent.add_square((IndustryType.BREWERY))
 
-        tamworth.add_square(Square((IndustryType.MANUFACTORY, IndustryType.COALMINE)))
-        tamworth.add_square(Square((IndustryType.MANUFACTORY, IndustryType.COALMINE)))
+        tamworth.add_square((IndustryType.MANUFACTORY, IndustryType.COALMINE))
+        tamworth.add_square((IndustryType.MANUFACTORY, IndustryType.COALMINE))
 
-        walsall.add_square(Square((IndustryType.IRONWORKS, IndustryType.COTTONMILL)))
-        walsall.add_square(Square((IndustryType.COTTONMILL, IndustryType.BREWERY)))
+        walsall.add_square((IndustryType.IRONWORKS, IndustryType.COTTONMILL))
+        walsall.add_square((IndustryType.COTTONMILL, IndustryType.BREWERY))
 
-        birmingham.add_square(Square((IndustryType.MANUFACTORY, IndustryType.COTTONMILL)))
-        birmingham.add_square(Square((IndustryType.COTTONMILL)))
-        birmingham.add_square(Square((IndustryType.IRONWORKS)))
-        birmingham.add_square(Square((IndustryType.COTTONMILL)))
+        birmingham.add_square((IndustryType.MANUFACTORY, IndustryType.COTTONMILL))
+        birmingham.add_square((IndustryType.COTTONMILL))
+        birmingham.add_square((IndustryType.IRONWORKS))
+        birmingham.add_square((IndustryType.COTTONMILL))
 
-        nuneaton.add_square(Square((IndustryType.COTTONMILL, IndustryType.BREWERY)))
-        nuneaton.add_square(Square((IndustryType.MANUFACTORY, IndustryType.COALMINE)))
+        nuneaton.add_square((IndustryType.COTTONMILL, IndustryType.BREWERY))
+        nuneaton.add_square((IndustryType.MANUFACTORY, IndustryType.COALMINE))
 
-        coventry.add_square(Square((IndustryType.POTTERY)))
-        coventry.add_square(Square((IndustryType.COTTONMILL, IndustryType.COALMINE)))
-        coventry.add_square(Square((IndustryType.IRONWORKS, IndustryType.COTTONMILL)))
+        coventry.add_square((IndustryType.POTTERY))
+        coventry.add_square((IndustryType.COTTONMILL, IndustryType.COALMINE))
+        coventry.add_square((IndustryType.IRONWORKS, IndustryType.COTTONMILL))
 
-        redditch.add_square(Square((IndustryType.COTTONMILL, IndustryType.COALMINE)))
-        redditch.add_square(Square((IndustryType.IRONWORKS)))
+        redditch.add_square((IndustryType.COTTONMILL, IndustryType.COALMINE))
+        redditch.add_square((IndustryType.IRONWORKS))
 
-        stafford.add_square(Square((IndustryType.COTTONMILL, IndustryType.BREWERY)))
-        stafford.add_square(Square((IndustryType.POTTERY)))
+        stafford.add_square((IndustryType.COTTONMILL, IndustryType.BREWERY))
+        stafford.add_square((IndustryType.POTTERY))
 
-        cannock.add_square(Square((IndustryType.COTTONMILL, IndustryType.COALMINE)))
-        cannock.add_square(Square((IndustryType.COALMINE)))
+        cannock.add_square((IndustryType.COTTONMILL, IndustryType.COALMINE))
+        cannock.add_square((IndustryType.COALMINE))
 
-        unnamed_city0.add_square(Square((IndustryType.BREWERY)))
+        unnamed_city0.add_square((IndustryType.BREWERY))
 
-        wolverhampton.add_square(Square((IndustryType.COTTONMILL)))
-        wolverhampton.add_square(Square((IndustryType.COTTONMILL, IndustryType.COALMINE)))
+        wolverhampton.add_square((IndustryType.COTTONMILL))
+        wolverhampton.add_square((IndustryType.COTTONMILL, IndustryType.COALMINE))
 
-        coalbrookdale.add_square(Square((IndustryType.IRONWORKS, IndustryType.BREWERY)))
-        coalbrookdale.add_square(Square((IndustryType.IRONWORKS))) 
-        coalbrookdale.add_square(Square((IndustryType.COALMINE)))
+        coalbrookdale.add_square((IndustryType.IRONWORKS, IndustryType.BREWERY))
+        coalbrookdale.add_square((IndustryType.IRONWORKS))
+        coalbrookdale.add_square((IndustryType.COALMINE))
 
-        dudley.add_square(Square((IndustryType.COALMINE)))
-        dudley.add_square(Square((IndustryType.IRONWORKS)))
+        dudley.add_square((IndustryType.COALMINE))
+        dudley.add_square((IndustryType.IRONWORKS))
 
-        kidderminster.add_square(Square((IndustryType.MANUFACTORY, IndustryType.COALMINE)))
-        kidderminster.add_square(Square((IndustryType.MANUFACTORY)))
+        kidderminster.add_square((IndustryType.MANUFACTORY, IndustryType.COALMINE))
+        kidderminster.add_square((IndustryType.MANUFACTORY))
 
-        worcester.add_square(Square((IndustryType.MANUFACTORY)))
-        worcester.add_square(Square((IndustryType.MANUFACTORY)))
+        worcester.add_square((IndustryType.MANUFACTORY))
+        worcester.add_square((IndustryType.MANUFACTORY))
 
-        unnamed_city1.add_square(Square((IndustryType.BREWERY)))
+        unnamed_city1.add_square((IndustryType.BREWERY))
         
         nottingham = TradingHub("Nottingham", (BonusType.VICTORY_POINTS, 3))
         oxford = TradingHub("Oxford", (BonusType.INCOME, 2))
@@ -223,46 +237,48 @@ class Board:
         shrewsbury = TradingHub("Shrewsbury", (BonusType.VICTORY_POINTS, 4)) 
         warrington = TradingHub("Warrington", (BonusType.COINS, 5))
 
-        shrewsbury_coalbrookdale = Link([coalbrookdale, shrewsbury], LinkType.BOTH)
-        coalbrookdale_wolverhampton = Link([coalbrookdale, wolverhampton], LinkType.BOTH)
-        coalbrookdale_kidderminster = Link([coalbrookdale, wolverhampton], LinkType.BOTH)
-        kidderminster_worcester = Link([kidderminster, worcester, unnamed_city1], LinkType.BOTH)
-        kidderminster_dudley = Link([kidderminster, dudley], LinkType.BOTH)
-        worcester_gloucester = Link([worcester, gloucester], LinkType.BOTH)
-        worcester_birmingham = Link([worcester, birmingham], LinkType.BOTH)
-        dudley_wolverhampton = Link([dudley, wolverhampton], LinkType.BOTH)
-        dudley_birmingham = Link([dudley, birmingham], LinkType.BOTH)
-        wolverhampton_cannock = Link([wolverhampton, cannock], LinkType.BOTH)
-        wolverhampton_walsall = Link([wolverhampton, walsall], LinkType.BOTH)
-        walsall_birmingham = Link([walsall, birmingham], LinkType.BOTH)
-        gloucester_redditch = Link([gloucester, redditch], LinkType.BOTH)
-        redditch_birmingham = Link([redditch, birmingham], LinkType.RAIL)
-        redditch_oxford = Link([redditch, oxford], LinkType.BOTH)
-        oxford_birmingham = Link([oxford, birmingham], LinkType.BOTH)
-        birmingham_coventry = Link([birmingham, coventry], LinkType.BOTH)
-        coventry_nuneaton = Link([coventry, nuneaton], LinkType.RAIL)
-        birmingham_nuneaton = Link([birmingham, nuneaton], LinkType.RAIL)
-        birmingham_tamworth = Link([birmingham, tamworth], LinkType.BOTH)
-        nuneaton_tamworth = Link([nuneaton, tamworth], LinkType.BOTH)
-        tamworth_walsall = Link[tamworth, walsall], LinkType.BOTH)
-        tamworth_burton = Link([tamworth, buton_on_trent], LinkType.BOTH)
-        burton_walsall = Link([burton_on_trent, walsall], LinkType.CANAL)
-        burton_cannock = Link([burton_on_trent, cannock], LinkType.RAIL)
-        burton_derby = Link([burton_on_trent, derby], LinkType.BOTH)
-        burton_stone = Link([burton_on_trent, stone], LinkType.BOTH)
-        cannock_walsall = Link([cannock, walsall], LinkType.BOTH)
-        cannock_wolverhampton = Link([cannock, wolverhampton], LinkType.BOTH)
-        cannock_unnamed_city10 = Link([cannock, unnamed_city0], LinkType.BOTH)
-        cannock_stafford = Link([cannock, stafford], LinkType.BOTH)
-        stafford_stone = Link([stafford, stone], LinkType.BOTH)
-        stone_stoke = Link([stone, stoke_on_trent], LinkType.BOTH)
-        stone_uttoxeter = Link([stone, uttoxeter], LinkType.RAIL)
-        derby_uttoxeter = Link([derby, uttoxeter], LinkType.RAIL)
-        derby_nottingham = Link([derby, nottingham], LinkType.BOTH)
-        derby_belper = Link([derby, belper], LinkType.BOTH)
-        stoke_warrington = Link([stoke_on_trent, warrington], LinkType.BOTH)
-        stoke_leek = Link([stoke_on_trent, leek], LinkType.BOTH)
-        leek_belper = Link([leek, belper], LinkType.RAIL)
+        connections = [ 
+            [(coalbrookdale, shrewsbury), LinkType.BOTH],
+            [(coalbrookdale, wolverhampton), LinkType.BOTH],
+            [(coalbrookdale, kidderminster), LinkType.BOTH],
+            [(kidderminster, worcester, unnamed_city1), LinkType.BOTH],
+            [(kidderminster, dudley), LinkType.BOTH],
+            [(worcester, gloucester), LinkType.BOTH],
+            [(worcester, birmingham), LinkType.BOTH],
+            [(dudley, wolverhampton), LinkType.BOTH],
+            [(dudley, birmingham), LinkType.BOTH],
+            [(wolverhampton, cannock), LinkType.BOTH],
+            [(wolverhampton, walsall), LinkType.BOTH],
+            [(walsall, birmingham), LinkType.BOTH],
+            [(gloucester, redditch), LinkType.BOTH],
+            [(redditch, birmingham), LinkType.RAIL],
+            [(redditch, oxford), LinkType.BOTH],
+            [(oxford, birmingham), LinkType.BOTH],
+            [(birmingham, coventry), LinkType.BOTH],
+            [(coventry, nuneaton), LinkType.RAIL],
+            [(birmingham, nuneaton), LinkType.RAIL],
+            [(birmingham, tamworth), LinkType.BOTH],
+            [(nuneaton, tamworth), LinkType.BOTH],
+            [(tamworth, walsall), LinkType.BOTH],
+            [(tamworth, burton_on_trent), LinkType.BOTH],
+            [(burton_on_trent, walsall), LinkType.CANAL],
+            [(burton_on_trent, cannock), LinkType.RAIL],
+            [(burton_on_trent, derby), LinkType.BOTH],
+            [(burton_on_trent, stone), LinkType.BOTH],
+            [(cannock, walsall), LinkType.BOTH],
+            [(cannock, wolverhampton), LinkType.BOTH],
+            [(cannock, unnamed_city0), LinkType.BOTH],
+            [(cannock, stafford), LinkType.BOTH],
+            [(stafford,stone), LinkType.BOTH],
+            [(stone, stoke_on_trent), LinkType.BOTH],
+            [(stone, uttoxeter), LinkType.RAIL],
+            [(derby, uttoxeter), LinkType.RAIL],
+            [(derby, nottingham), LinkType.BOTH],
+            [(derby, belper), LinkType.BOTH],
+            [(stoke_on_trent, warrington), LinkType.BOTH],
+            [(stoke_on_trent, leek), LinkType.BOTH],
+            [(leek, belper), LinkType.RAIL]
+        ]
 
         self.cities.append(stoke_on_trent)
         self.cities.append(stone)

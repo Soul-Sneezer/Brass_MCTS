@@ -91,10 +91,13 @@ class Game:
 
         random.shuffle(self.cards) # shuffle the deck
 
-    def getCoalPrice():
+    def getCoalPrice(self, remove=0):
+        if remove != 0: # get price if we had already removed more than 1 resource
+            
         return self.board.coal_market.getPrice()
 
-    def getIronPrice():
+    def getIronPrice(self, remove=0):
+        if remove != 0: # get price if we had already removed more than 1 resource
         return self.board.iron_market.getPrice()
     
 class Simulation:

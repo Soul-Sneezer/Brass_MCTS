@@ -8,6 +8,9 @@ from board import IndustryType
 from board import BuildingInstance
 from game import Game
 
+def getCost(price, game):
+    return price[0] + price[1] * game.getCoalPrice() + price[2] * game.getIronPrice()
+
 class Building:
     def __init__(self, industry_type, stats, price, beers=0, resources=0):
         self.industry_type = industry_type
@@ -15,9 +18,6 @@ class Building:
         self.price = price
         self.beers = beers # number of beers required for it to be sold
         self.resources = resources
-
-    def getCost(self):
-        return self.price[0] + self.price[1] * game.getCoalPrice() + self.price[2] * game.getIronPrice() # i also need to check if there is a link to a mine :C
 
 buildings = [[[IndustryType.IRONWORKS,( 3, 3, 1), (5, 1, 0), 0, 4, 1],
               [IndustryType.IRONWORKS,( 5, 3, 1), (7, 1, 0), 0, 4, 1],
@@ -94,7 +94,7 @@ class Player:
         self.createPotteries()
         self.createCottonMills()
 
-    def __init__(self, id):
+    def __init__(self, id, game):
         self.id = id
         self.iron_works = []
         self.coal_mines = []
@@ -114,20 +114,21 @@ class Player:
         self.has_city_wildcard = False
         self.cards = []
         self.discard_pile = [] # could be useful for checking the probability of getting a certain card 
+        self.game = game # reference to the game you are playing
 
     def canBuild(self, location, building):
-        if not(game.first_era) and building.level == 1 and building.industry_type != IndustryType.POTTERY:
+        if not(self.game.first_era) and building.level == 1 and building.industry_type != IndustryType.POTTERY:
             return False    
         if not(location.isAvailable(building.industry_type)):
             return False
-        if player.money < building.getCost():
+        if self.coins < getCost(building.cost, self.game):
             return False
 
         return True
 
     def build(self, location, building): # builds a building
         if self.canBuild(location, building):
-            player.money -= getCost(building)
+            self.coins -= getCost(building.cost, self.game)
             new_building = Building()
             self.buildings_on_board.append(new_building)
             return True
@@ -135,7 +136,10 @@ class Player:
         return False
 
     def network(self, city1, city2):         # build a canal/rail
-        price = 3
+        if self.game.first_era == True: 
+            price = (3, 0, 0)
+        else:
+            price = (5, 1, 0)
         for link in city1.adjacent:
             for city in links.cities:
                 if city == city2:
@@ -144,48 +148,52 @@ class Player:
                     return
 
     def develop(self, industry_type, once=True): # removes one or two cards(lowest level possible) from the available buildings, granting access to higher level buildings
-        price = game.getIronPrice()
+        price = self.game.getIronPrice()
         if not(once):
-            price *= 2
+            price += self.game.getIronPrice()
 
-        if self.money < price:
+        if self.coins < price:
             return False
 
-        self.money -= price
+        self.coins -= price
 
-        if industry_type == IndustryType.IRONWORKS and iron_works.size() > 1:
+        if industry_type == IndustryType.IRONWORKS and len(self.iron_works) > 1:
             self.iron_works.pop()
-            if not(once) and iron_works.size() > 1:
+            if not(once) and len(self.iron_works) > 1:
                 self.iron_works.pop()
-        elif industry_type == IndustryType.COALMINE and coal_mines.size() > 1:
+        elif industry_type == IndustryType.COALMINE and len(self.coal_mines) > 1:
             self.coal_mines.pop()
-            if not(once) and coal_mines.size() > 1:
+            if not(once) and len(self.coal_mines) > 1:
                 self.iron_works.pop()
-        elif industry_type == IndustryType.POTTERY and potteries.size() > 1:
+        elif industry_type == IndustryType.POTTERY and len(self.potteries) > 1:
             self.potteries.pop()
-            if not(once) and potteries.size() > 1:
+            if not(once) and len(self.potteries) > 1:
                 self.potteries.pop()
-        elif industry_type == IndustryType.MANUFACTORY and manufactories.size() > 1:
+        elif industry_type == IndustryType.MANUFACTORY and len(self.manufactories) > 1:
             self.manufactories.pop()
-            if not(once) and manufactories.size() > 1:
+            if not(once) and len(self.manufactories) > 1:
                 self.manufactories.pop()
-        elif industry_type == IndustryType.COTTONMILL and cotton_mills.size() > 1:
+        elif industry_type == IndustryType.COTTONMILL and len(self.cotton_mills) > 1:
             self.cotton_mills.pop()
-            if not(once) and cotton_mills.size() > 1:
+            if not(once) and len(self.cotton_mills) > 1:
                 self.cotton_mills.pop()
-        elif industry_type == IndustryType.BREWERY and breweries.size() > 1:
+        elif industry_type == IndustryType.BREWERY and len(self.breweries) > 1:
             self.breweries.pop()
-            if not(once) and breweries.size() > 1:
+            if not(once) and len(self.breweries) > 1:
                 self.breweries.pop()
-        else
+        else:
             return False # Unknown industry type
 
         return True
 
+    def canSell(self, target):
+        pass
+
     def sell(self, target): # the target is a building
-        target.sold = True
-        self.income += target.stats[1]
-        self.victory_points += target.stats[0]
+        if self.canSell(target): # check if has access to enough beer
+            target.sold = True
+            self.income += target.stats[1]
+            self.victory_points += target.stats[0]
 
     def loan(self):
         self.coins += 30
@@ -214,7 +222,7 @@ class Player:
     # up to income level 29, there are 4 steps between levels VP 61 - 96
     # for income level 30, there are 3 steps, and I guess you can't have more than 30 income VP 97 - 99
 
-    def incomeStepsToLevel(income):
+    def incomeStepsToLevel(self, income):
         if income > 60:
             return 21 + int((income - 61) / 4)
         elif income > 30:
@@ -224,7 +232,7 @@ class Player:
         else
             return (income - 10)
 
-    def incomeLevelToSteps(level):
+    def incomeLevelToSteps(self, level):
         if level == 30:
             return 99
         elif level > 20:
@@ -237,9 +245,8 @@ class Player:
             return 10 + level
 
     def adjustIncome(self, loan = False, steps = 0):
-                
         if loan:
-            self.income = incomeLevelToSteps(incomeStepsToLevel(self.income) - 3)
+            self.income = self.incomeLevelToSteps(self.incomeStepsToLevel(self.income) - 3)
         else:
             self.income += steps
 
