@@ -116,10 +116,20 @@ class Player:
         self.discard_pile = [] # could be useful for checking the probability of getting a certain card 
         self.game = game # reference to the game you are playing
 
+    def spendCoins(self, price):
+        self.coins -= price[0]
+        while price[1] > 0:
+            self.game.board.coal_market.removeResources()
+            price[1] -= 1
+
+        while price[2] > 0:
+            self.game.board.iron_market.removeResources()
+            price[2] -= 1
+
     def canBuild(self, location, building):
         if not(self.game.first_era) and building.level == 1 and building.industry_type != IndustryType.POTTERY:
             return False    
-        if not(location.isAvailable(building.industry_type)):
+        if not(location.isAvailable(building.industry_type, self.id)):
             return False
         if self.coins < getCost(building.cost, self.game):
             return False
@@ -128,9 +138,18 @@ class Player:
 
     def build(self, location, building): # builds a building
         if self.canBuild(location, building):
-            self.coins -= getCost(building.cost, self.game)
-            new_building = Building()
-            self.buildings_on_board.append(new_building)
+            self.spendCoins(building.price)
+           
+            if building.industry_type == IndustryType.BREWERY and self.game.first_era == False:
+                building.resources = 2
+
+            new_building = BuildingInstance(building, self.id)
+            location.addBuilding(new_building)
+            self.buildings_on_board.append(new_building) # this makes it easier to score up the buildings at the end
+            
+            for link in location.parent.adjacent:
+                link.points += building.stats[2] # doing this now so I don't have to travel the entrie graph when doing MTS 
+            
             return True
 
         return False
@@ -140,12 +159,21 @@ class Player:
             price = (3, 0, 0)
         else:
             price = (5, 1, 0)
+            price2 = (15, 2, 1)
         for link in city1.adjacent:
             for city in links.cities:
                 if city == city2:
-                    links.changeOwnership(self.id)
-                    if game # check era, check if the player has the necessary money, check if link is available, spend money, change link owner
-                    return
+                    if self.coins >= price[0] + price[1] * self.game.getCoalPrice(): # I'll also need to consider the case when you build 2 rails with one actions
+                        # but I need the logic for finding access to a beer, which is also used in the sell action
+                        self.coins -= price[0] + price[1] * self.game.getCoalPrice()
+                        if price[1] != 0:
+                            self.game.board.coal_market.removeResources()
+                        
+                        links.changeOwnership(self.id)
+                        return True
+                    return False
+
+        return False
 
     def develop(self, industry_type, once=True): # removes one or two cards(lowest level possible) from the available buildings, granting access to higher level buildings
         price = self.game.getIronPrice()
@@ -186,11 +214,19 @@ class Player:
 
         return True
 
-    def canSell(self, target):
-        pass
+    def availableBeer(self): # check if you have the necessary beer available
+        available_beer = 0
+        for building_instance in self.buildings_on_board:
+            if building_instance.building.industry_type == IndustryType.BREWERY and building_instance.sold == False:
+                available_beer += building_instance.building.resources
+                
+        # I need to do a graph traversal in order to find if player has access to other breweries, I should find a way to optimize this
 
-    def sell(self, target): # the target is a building
-        if self.canSell(target): # check if has access to enough beer
+    def sell(self, targets): # the target is a building or multiple buildings
+        necessary_beer = 0
+        for target in targets:
+            necessary_beer += target.building.cost[3]
+        if self.availableBeer() >= necessary_beer: # check if has access to enough beer, then you need to determine which beers to use
             target.sold = True
             self.income += target.stats[1]
             self.victory_points += target.stats[0]

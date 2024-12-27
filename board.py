@@ -53,7 +53,7 @@ class TradingHub:
         self.squares = []
 
     def addSquare(self, square):
-        self.squares.append(square)https://towardsdatascience.com/the-mostly-complete-chart-of-neural-networks-explained-3fb6f2367464?gi=8d4f2e42595b
+        self.squares.append(square)
 
 class Market:
     def __init__(self, resources, maximum_resources):
@@ -78,17 +78,25 @@ class Market:
         return 0
 
 class BuildingInstance:
-    def __init__(self, building, player_id, sold, location):
+    def __init__(self, building, player_id):
         self.building = building
         self.player_id = player_id
         self.sold = False
-        self.location = location
 
 class Square:
     def __init__(self, buildings, parent):
-        self.building_types = buildings
-        self.taken = False
+        self.building_types = buildings # accepted building types
+        self.building = None # Reference to building instance
         self.parent = parent
+
+    def addBuilding(self, building_instance):
+        self.building = building_instance
+
+    def isAvailable(self, player_id, building_type):
+        if self.building == None or (self.building.player_id == player_id and self.building.type == building_type): # I believe you can overbuild based on the building that is already there, not on the building types of the square
+            return True
+        
+        return False
    
 class Link: 
     def __init__(self, connected_cities, link_type):
@@ -98,7 +106,7 @@ class Link:
         self.cities = []
         for city in connected_cities:
             self.cities.append(city)
-            city.add_connection(self)
+            city.add_link(self)
     
     def change_ownership(self, owner):
         self.owner_id = owner
@@ -112,14 +120,13 @@ class City:
     def add_square(self, buildings):
         self.squares.append(Square(buildings, self))
 
-    def add_connection(self, connection):
-        self.adjacent.append(connection)
+    def add_link(self, link):
+        self.adjacent.append(link)
 
-    def isAvailable(self, building_type):
+    def isAvailable(self, building_type, player_id):
         for square in self.squares:
-            for building in square.building_types:
-                if building_type == building and square.taken == False:
-                    return True
+            if square.isAvailable(player_id, building_type):
+                return True
 
         return False
 
