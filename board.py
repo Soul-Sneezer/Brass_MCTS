@@ -26,6 +26,7 @@
 # building if the building slots are empty
 
 from enum import Enum
+from queue import PriorityQueue
 
 class LinkType(Enum):
     BOTH = 0
@@ -84,16 +85,16 @@ class BuildingInstance:
         self.sold = False
 
 class Square:
-    def __init__(self, buildings, parent):
-        self.building_types = buildings # accepted building types
-        self.building = None # Reference to building instance
+    def __init__(self, building_types, parent):
+        self.building_types = building_types # accepted building types
+        self.building_instance = None # Reference to building instance
         self.parent = parent
 
     def addBuilding(self, building_instance):
-        self.building = building_instance
+        self.building_instance = building_instance
 
     def isAvailable(self, player_id, building_type):
-        if self.building == None or (self.building.player_id == player_id and self.building.type == building_type): # I believe you can overbuild based on the building that is already there, not on the building types of the square
+        if self.building_instance == None or (self.building_instance.player_id == player_id and self.building_instance.building.industry_type == building_type): # I believe you can overbuild based on the building that is already there, not on the building types of the square
             return True
         
         return False
@@ -107,7 +108,16 @@ class Link:
         for city in connected_cities:
             self.cities.append(city)
             city.add_link(self)
-    
+   
+    def __hash__(self):
+        string = ""
+        for city in self.cities:
+            string += city.name
+        return hash(string)
+
+    def __eq__(self, other):
+        return isinstance(other, Link) and self.cities == other.cities
+
     def change_ownership(self, owner):
         self.owner_id = owner
 
@@ -116,6 +126,12 @@ class City:
         self.name = name
         self.adjacent = []
         self.squares = []
+
+    def __hash__(self):
+        return hash(self.name)
+
+    def __eq__(self, other):
+        return isinstance(other, City) and self.name == other.name
     
     def add_square(self, buildings):
         self.squares.append(Square(buildings, self))
@@ -130,6 +146,62 @@ class City:
 
         return False
 
+def isBrewery(target):
+    for square in target.squares:
+        if square.building_instance != None and square.building_instance.building.industry_type == IndustryType.BREWERY:
+            return True
+
+    return False
+
+def isTradingHub(target):
+    return isinstance(target, TradingHub)
+
+def isIronWorks(target):
+    for square in target.squares:
+        if square.building_instance != None and square.building_instance.building.industry_type == IndustryType.IRONWORKS:
+            return True
+
+    return False
+
+def isCoalMine(target):
+    for square in target.squares:
+        if square.building_instance != None and square.building_instance.building.industry_type == IndustryType.COALMINE:
+            return True
+
+    return False
+
+def BFS(starting_point, check, full_search = False): # used when searching for resources and links to markets
+        pq = PriorityQueue()
+        pq.put((starting_point, 0))
+        nodes = []
+        hash_map = {}
+        dist_cutoff = -1
+
+        while not(pq.empty()):
+            node = pq.get()
+            hash_map[node[0]] = True
+            if dist_cutoff != -1 and node[1] > dist_cutoff:
+                return nodes
+            elif check(node[0]):
+                if full_search:
+                    nodes.append(node)
+                else:
+                    dist_cutoff = node[1]
+
+            elif isinstance(node[0], City):
+                for city in node.cities: 
+                    if hash_map[city] != True:
+                        pq.put((city, node[1] + 1))
+            elif isinstance(node[0], Link):
+                for link in node.adjacent:
+                    if hash_map[link] != True:
+                        pq.put((link, node[1] + 1))
+            else:
+                pass
+
+        return nodes
+
+
 
 class Board:
     iron_works = []
@@ -142,7 +214,6 @@ class Board:
     cities = []
     trading_hubs = []
        
-    
     def createLocations(self): # basically creates the whole map
         stoke_on_trent = City("Stoke-On-Trent")
         leek = City("Leek")

@@ -7,9 +7,12 @@
 from board import IndustryType
 from board import BuildingInstance
 from game import Game
-
-def getCost(price, game):
-    return price[0] + price[1] * game.getCoalPrice() + price[2] * game.getIronPrice()
+from enum import Enum
+from board import BFS
+from board import isBrewery
+from board import isTradingHub
+from board import isIronWorks
+from board import isCoalMine
 
 class Building:
     def __init__(self, industry_type, stats, price, beers=0, resources=0):
@@ -116,6 +119,17 @@ class Player:
         self.discard_pile = [] # could be useful for checking the probability of getting a certain card 
         self.game = game # reference to the game you are playing
 
+    def buildingPriority(self, target): # if it's yours, highest priority, if you have multiple buildings of the same type, the one with the lowest remaining resources should be even higher priority
+        # if it's not yours, the more resources are left on it, the better
+        priority = 0
+        if target.player_id == self.id:
+            priority += 100
+            priority -= target.building.resources
+        else:
+            priority +=  target.building.resources
+
+        return priority
+
     def spendCoins(self, price):
         self.coins -= price[0]
         while price[1] > 0:
@@ -126,20 +140,112 @@ class Player:
             self.game.board.iron_market.removeResources()
             price[2] -= 1
 
+    def findBeer(self, target):
+        available_sources = [] 
+        for building_instance in self.buildings_on_board:
+            if building_instance.building.industry_type == IndustryType.BREWERY:
+                available_sources.append(building_instance)
+
+        external_sources = BFS(target, isBrewery)
+        available_sources.extend(external_sources)
+
+        available_sources.sort(key=self.buildingPriority)
+        return available_sources
+
+    def findIron(self):
+        available_sources = [] 
+        for building_instance in self.buildings_on_board:
+            if building_instance.building.industry_type == IndustryType.BREWERY:
+                available_sources.append(building_instance)
+
+        for player in self.game.players:
+            if player.id != self.id:
+                for building_instance in player.buildings_on_board:
+                    if building_instance.building.industry_type == IndustryType.IRONWORKS:
+                        available_sources.append(building_instance)
+
+        available_sources.sort(key=self.buildingPriority)
+        return available_sources
+
+    def findCoal(self, target):
+        available_sources = BFS(target, isCoalMine)
+        available_sources.sort(key=self.buildingPriority)
+        return available_sources
+
     def canBuild(self, location, building):
         if not(self.game.first_era) and building.level == 1 and building.industry_type != IndustryType.POTTERY:
             return False    
         if not(location.isAvailable(building.industry_type, self.id)):
             return False
-        if self.coins < getCost(building.cost, self.game):
+        if self.coins < building.cost[0]:
             return False
+
+        cost = building.cost[0]
+        needed_coal = building.cost[1]
+        needed_iron = building.cost[2]
+        coal_sources = []
+        available_coal = 0
+        iron_sources = []
+        available_iron = 0
+
+        if needed_coal > 0:
+            coal_sources = self.findCoal(location)
+
+        if needed_iron > 0:
+            iron_sources = self.findIron()
+
+        for coal_source in coal_sources:
+            available_coal += coal_source.building.resources
+
+        for iron_source in iron_sources:
+            available_iron += iron_source.building.resources
+
+        if available_coal < needed_coal:
+            deficit = (needed_coal - available_coal) 
+            cost += self.game.getCoalPrice(deficit)
+
+        if available_iron < needed_iron:
+            deficit = (needed_iron - available_iron)
+            cost += self.game.getIronPrice(deficit)
+
+        if self.coins < cost:
+            return False
+        else:
+            self.coins -= cost
+       
+        # spend the resources now
+        i = 0
+        while needed_coal > 0 and i < len(coal_sources): # first the coal
+            while needed_coal > 0 and coal_sources[i].building.resources > 0:
+                needed_coal -= 1
+                coal_sources[i].building.resources -= 1
+
+            if needed_coal > 0:
+                self.sell(coal_sources[i].building)
+                i = i + 1 
+
+        while needed_coal > 0: # couldn't get all the necessary coal from the board
+            self.game.coal_market.removeResource()
+            needed_coal -= 1
+
+        i = 0
+        while needed_iron > 0 and i < len(iron_sources):  # now the iron
+            while needed_iron > 0 and iron_sources[i].building.resources > 0:
+                needed_iron -= 1
+                iron_sources[i].building.resources -= 1
+
+            if needed_iron > 0:
+                self.sell(iron_sources[i].building)
+                i = i + 1    
+
+        while needed_iron > 0: # couldn't get all the necessary beer from the board
+            self.game.iron_market.removeResource()
+            needed_iron -= 1
 
         return True
 
     def build(self, location, building): # builds a building
-        if self.canBuild(location, building):
-            self.spendCoins(building.price)
-           
+        if self.canBuild(location, building): # canBuild also handles the spending part, if you can build
             if building.industry_type == IndustryType.BREWERY and self.game.first_era == False:
                 building.resources = 2
 
@@ -161,7 +267,7 @@ class Player:
             price = (5, 1, 0)
             price2 = (15, 2, 1)
         for link in city1.adjacent:
-            for city in links.cities:
+            for city in link.cities:
                 if city == city2:
                     if self.coins >= price[0] + price[1] * self.game.getCoalPrice(): # I'll also need to consider the case when you build 2 rails with one actions
                         # but I need the logic for finding access to a beer, which is also used in the sell action
@@ -169,7 +275,7 @@ class Player:
                         if price[1] != 0:
                             self.game.board.coal_market.removeResources()
                         
-                        links.changeOwnership(self.id)
+                        link.changeOwnership(self.id)
                         return True
                     return False
 
@@ -219,14 +325,33 @@ class Player:
         for building_instance in self.buildings_on_board:
             if building_instance.building.industry_type == IndustryType.BREWERY and building_instance.sold == False:
                 available_beer += building_instance.building.resources
-                
+               
+        return available_beer
         # I need to do a graph traversal in order to find if player has access to other breweries, I should find a way to optimize this
 
-    def sell(self, targets): # the target is a building or multiple buildings
-        necessary_beer = 0
-        for target in targets:
-            necessary_beer += target.building.cost[3]
-        if self.availableBeer() >= necessary_beer: # check if has access to enough beer, then you need to determine which beers to use
+    def canSell(self, target, necessary_beer): # check if you have access to a necessary market and the required beers
+        industry_type = target.building.industry_type
+        if industry_type == IndustryType.IRONWORKS or industry_type == IndustryType.COALMINE or industry_type == IndustryType.BREWERY:
+            if target.building.resources == 0:
+                return True
+            return False
+
+        markets = BFS(target, isTradingHub, full_search=True)
+        available_beer = self.availableBeer()
+
+        for market in markets:
+            for square in market.squares:
+                for building_types in square.building_types:
+                    for building_type in building_types:
+                        if target.industry_type == building_type and available_beer >= necessary_beer:
+                            return True
+
+        return False
+
+    def sell(self, target): # the target is a building or multiple buildings
+        necessary_beer = target.building.cost[3]
+        
+        if self.canSell(target, necessary_beer): # check if has access to enough beer, then you need to determine which beers to use
             target.sold = True
             self.income += target.stats[1]
             self.victory_points += target.stats[0]
@@ -265,7 +390,7 @@ class Player:
             return 11 + int((income - 31) / 3)
         elif income > 10:
             return 1 + int((income - 11) / 2)
-        else
+        else:
             return (income - 10)
 
     def incomeLevelToSteps(self, level):

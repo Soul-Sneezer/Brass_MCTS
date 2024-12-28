@@ -71,6 +71,22 @@ class Game:
         self.createCards(number_of_players)
         self.number_of_players = number_of_players
         self.board = board.Board()    
+        self.players = []
+        self.createPlayers(number_of_players)
+        self.game = Game(number_of_players)
+        self.distributeCardsToPlayers(number_of_players)
+
+    def createPlayers(self, number_of_players): # the agents
+        for i in range(number_of_players):
+            self.players.append(Player(i, self.game))
+    
+    def distributeCardsToPlayers(self, number_of_players):
+        for j in range(9):
+            for i in range(number_of_players):
+                self.players[i].draw_card(self.game.cards.pop())
+
+        for i in range(number_of_players):
+            self.players[i].discard_pile.append(self.players[i].cards.pop())
 
     def createCards(self, number_of_players):
         card_packs = 0
@@ -91,33 +107,40 @@ class Game:
 
         random.shuffle(self.cards) # shuffle the deck
 
-    def getCoalPrice(self, remove=0):
-        if remove != 0: # get price if we had already removed more than 1 resource
-            
-        return self.board.coal_market.getPrice()
+    def getCoalPrice(self, count):
+        if count > 0: # get price if we had already removed more than 1 resource
+            count2 = count
+            while count > 0:
+                self.board.coal_market.removeResource()
+                count -= 1
+            price = self.board.coal_market.getPrice()
 
-    def getIronPrice(self, remove=0):
-        if remove != 0: # get price if we had already removed more than 1 resource
-        return self.board.iron_market.getPrice()
+            while count2 > 0:
+                self.board.coal_market.addResource()
+                count2 -= 1
+
+        else:
+            price = self.board.coal_market.getPrice()
+        
+        return price
+
+    def getIronPrice(self, count):
+        if count > 0: # get price if we had already removed more than 1 resource
+            count2 = count
+            while count > 0:
+                self.board.iron_market.removeResource()
+                count -= 1
+            price = self.board.iron_market.getPrice()
+
+            while count2 > 0:
+                self.board.iron_market.addResource()
+                count2 -= 1
+        else:
+            price = self.board.iron_market.getPrice()
+        
+        return price
     
 class Simulation:
-    def __init__(self, number_of_players):
-        self.players = []
-        self.createPlayers(number_of_players)
-        self.game = Game(number_of_players)
-        self.distributeCardsToPlayers(number_of_players)
-
-    def createPlayers(self, number_of_players): # the agents
-        for i in range(number_of_players):
-            self.players.append(Player())
     
-    def distributeCardsToPlayers(self, number_of_players):
-        for j in range(9):
-            for i in range(number_of_players):
-                self.players[i].draw_card(self.game.cards.pop())
-
-        for i in range(number_of_players):
-            self.players[i].discard_pile.append(self.players[i].cards.pop())
-
     def run(self): # this will be the 'meat' of this project
         pass
