@@ -52,9 +52,11 @@ class TradingHub:
         self.name = name
         self.bonus = bonus
         self.squares = []
+        self.taken = []
 
     def addSquare(self, square):
         self.squares.append(square)
+        self.taken.append(False)
 
 class Market:
     def __init__(self, resources, maximum_resources):
@@ -147,6 +149,9 @@ class City:
         return False
 
 def isBrewery(target):
+    if not(isTradingHub(target)) and not(isinstance(target, City)):
+        return False
+
     for square in target.squares:
         if square.building_instance != None and square.building_instance.building.industry_type == IndustryType.BREWERY:
             return True
@@ -157,6 +162,9 @@ def isTradingHub(target):
     return isinstance(target, TradingHub)
 
 def isIronWorks(target):
+    if not(isinstance(target, City)):
+        return False 
+
     for square in target.squares:
         if square.building_instance != None and square.building_instance.building.industry_type == IndustryType.IRONWORKS:
             return True
@@ -164,6 +172,12 @@ def isIronWorks(target):
     return False
 
 def isCoalMine(target):
+    if isTradingHub(target):
+        return True
+
+    if not(isinstance(target, City)):
+        return False
+    
     for square in target.squares:
         if square.building_instance != None and square.building_instance.building.industry_type == IndustryType.COALMINE:
             return True

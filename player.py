@@ -146,7 +146,7 @@ class Player:
             if building_instance.building.industry_type == IndustryType.BREWERY:
                 available_sources.append(building_instance)
 
-        external_sources = BFS(target, isBrewery)
+        external_sources = BFS(target, isBrewery, full_search=True)
         available_sources.extend(external_sources)
 
         available_sources.sort(key=self.buildingPriority)
@@ -199,6 +199,9 @@ class Player:
 
         for iron_source in iron_sources:
             available_iron += iron_source.building.resources
+
+        for beer_source in beer_sources:
+            available_beer += beer_source.building.resources
 
         if available_coal < needed_coal:
             deficit = (needed_coal - available_coal) 
@@ -261,73 +264,115 @@ class Player:
         return False
 
     def network(self, city1, city2):         # build a canal/rail
-        if self.game.first_era == True: 
-            price = (3, 0, 0)
+        if self.game.first_era == True:
+            if self.coins >= 3:
+                for link in city1.adjacent:
+                    for city in link.cities:
+                        if city == city2:
+                            self.coins -= 3 
+                            link.changeOwnership(self.id)
+                            return True
+            else:
+                return False
         else:
-            price = (5, 1, 0)
-            price2 = (15, 2, 1)
-        for link in city1.adjacent:
-            for city in link.cities:
-                if city == city2:
-                    if self.coins >= price[0] + price[1] * self.game.getCoalPrice(): # I'll also need to consider the case when you build 2 rails with one actions
-                        # but I need the logic for finding access to a beer, which is also used in the sell action
-                        self.coins -= price[0] + price[1] * self.game.getCoalPrice()
-                        if price[1] != 0:
-                            self.game.board.coal_market.removeResources()
-                        
-                        link.changeOwnership(self.id)
-                        return True
-                    return False
+            for link in city1.adjacent:
+                for city in link.cities:
+                    if city == city2:
+                        coal_sources = self.findCoal(city2)
+                        coal_sources.extend(self.findCoal(city1))
+
+                        if len(coal_sources) == 0:
+                            if self.coins >= 5 + self.game.getCoalPrice(): # I'll also need to consider the case when you build 2 rails with one actions
+                                # but I need the logic for finding access to a beer, which is also used in the sell action
+                                self.coins -= 5 + self.game.getCoalPrice()
+                                self.game.board.coal_market.removeResources()
+                                
+                                link.changeOwnership(self.id)
+                                return True
+                            else:
+                                return False
+                        else:
+                            coal_sources[0].building.resources -= 1
+                            if coal_sources[0].building.resources == 0:
+                                sell(coal_sources[0])
+                            if self.coins >= 5:
+                                self.coins -= 5
+                                link.changeOwnership(self.id)
+                                return True
+                            else:
+                                return False
+
+                        return False
 
         return False
 
-    def develop(self, industry_type, once=True): # removes one or two cards(lowest level possible) from the available buildings, granting access to higher level buildings
-        price = self.game.getIronPrice()
-        if not(once):
-            price += self.game.getIronPrice()
+    def network2(self, city1, city2, city3, city4): # only available in second era 
+        if city2 == city3: # so we make one long route
 
-        if self.coins < price:
-            return False
 
-        self.coins -= price
+        i = 0
+        while needed_coal > 0 and i < len(coal_sources): # first the coal
+            while needed_coal > 0 and coal_sources[i].building.resources > 0:
+                needed_coal -= 1
+                coal_sources[i].building.resources -= 1
 
-        if industry_type == IndustryType.IRONWORKS and len(self.iron_works) > 1:
-            self.iron_works.pop()
-            if not(once) and len(self.iron_works) > 1:
-                self.iron_works.pop()
-        elif industry_type == IndustryType.COALMINE and len(self.coal_mines) > 1:
-            self.coal_mines.pop()
-            if not(once) and len(self.coal_mines) > 1:
-                self.iron_works.pop()
-        elif industry_type == IndustryType.POTTERY and len(self.potteries) > 1:
-            self.potteries.pop()
-            if not(once) and len(self.potteries) > 1:
-                self.potteries.pop()
-        elif industry_type == IndustryType.MANUFACTORY and len(self.manufactories) > 1:
-            self.manufactories.pop()
-            if not(once) and len(self.manufactories) > 1:
-                self.manufactories.pop()
-        elif industry_type == IndustryType.COTTONMILL and len(self.cotton_mills) > 1:
-            self.cotton_mills.pop()
-            if not(once) and len(self.cotton_mills) > 1:
-                self.cotton_mills.pop()
-        elif industry_type == IndustryType.BREWERY and len(self.breweries) > 1:
-            self.breweries.pop()
-            if not(once) and len(self.breweries) > 1:
-                self.breweries.pop()
+            if needed_coal > 0:
+                self.sell(coal_sources[i].building)
+                i = i + 1 
+
+        while needed_coal > 0: # couldn't get all the necessary coal from the board
+            self.game.coal_market.removeResource()
+            needed_coal -= 1
+
+
+    def develop(self, industry_types, once=True): # removes one or two cards(lowest level possible) from the available buildings, granting access to higher level buildings
+        needed_iron = 0
+        if once:
+            needed_iron = 1 
         else:
-            return False # Unknown industry type
+            needed_iron = 2
+
+        iron_sources = self.findIron()    
+        available_iron = 0
+
+        for iron_source in iron_sources:
+            available_iron += iron_source.building.resources
+        
+        if available_iron < needed_iron:
+            deficit = (needed_iron - available_iron)
+            self.coins -= self.game.getIronPrice(deficit)
+
+        i = 0
+        while needed_iron > 0 and i < len(iron_sources):  # consume the iron
+            while needed_iron > 0 and iron_sources[i].building.resources > 0:
+                needed_iron -= 1
+                iron_sources[i].building.resources -= 1
+
+            if needed_iron > 0:
+                self.sell(iron_sources[i].building)
+                i = i + 1    
+
+        while needed_iron > 0: # couldn't get all the necessary beer from the board
+            self.game.iron_market.removeResource()
+            needed_iron -= 1
+
+        for industry_type in industry_types:
+            if industry_type == IndustryType.IRONWORKS and len(self.iron_works) > 1:
+                self.iron_works.pop()
+            elif industry_type == IndustryType.COALMINE and len(self.coal_mines) > 1:
+                self.coal_mines.pop()
+            elif industry_type == IndustryType.POTTERY and len(self.potteries) > 1:
+                self.potteries.pop()
+            elif industry_type == IndustryType.MANUFACTORY and len(self.manufactories) > 1:
+                self.manufactories.pop()
+            elif industry_type == IndustryType.COTTONMILL and len(self.cotton_mills) > 1:
+                self.cotton_mills.pop()
+            elif industry_type == IndustryType.BREWERY and len(self.breweries) > 1:
+                self.breweries.pop()
+            else:
+                return False # Unknown industry type
 
         return True
-
-    def availableBeer(self): # check if you have the necessary beer available
-        available_beer = 0
-        for building_instance in self.buildings_on_board:
-            if building_instance.building.industry_type == IndustryType.BREWERY and building_instance.sold == False:
-                available_beer += building_instance.building.resources
-               
-        return available_beer
-        # I need to do a graph traversal in order to find if player has access to other breweries, I should find a way to optimize this
 
     def canSell(self, target, necessary_beer): # check if you have access to a necessary market and the required beers
         industry_type = target.building.industry_type
@@ -336,8 +381,15 @@ class Player:
                 return True
             return False
 
+        needed_beer = target.building.beers
         markets = BFS(target, isTradingHub, full_search=True)
-        available_beer = self.availableBeer()
+        beer_sources = self.findBeer(target)
+        available_beer = 0
+        for beer_source in beer_sources:
+            available_beer += beer_source.building.resources
+
+        if available_beer < needed_beer:
+            return False
 
         for market in markets:
             for square in market.squares:
