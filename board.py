@@ -52,7 +52,6 @@ class TradingHub:
     def __init__(self, name, bonus):
         self.name = name
         self.bonus = bonus
-        self.coal = 1000 # we'll just pretend this is also some kind of mine
         self.squares = []
         self.taken = []
 

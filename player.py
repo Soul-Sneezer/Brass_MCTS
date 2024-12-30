@@ -196,12 +196,20 @@ class Player:
             iron_sources = self.findIron()
 
         for coal_source in coal_sources:
-            available_coal += coal_source.building.resources
+            if not(isinstance(coal_source, TradingHub)):
+                available_coal += coal_source.building.resources
 
         for iron_source in iron_sources:
             available_iron += iron_source.building.resources
 
         if available_coal < needed_coal:
+            connected_to_market = False
+            for coal_source in coal_sources:
+                if isinstance(coal_source, TradingHub):
+                    connected_to_market = True
+
+            if not(connected_to_market):
+                return False
             deficit = (needed_coal - available_coal) 
             cost += self.game.getCoalPrice(deficit)
 
