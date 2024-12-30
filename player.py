@@ -277,7 +277,10 @@ class Player:
 
         return None
 
-    def network(self, city1, city2):         # build a canal/rail
+    def network(self, city1, city2, price=5):         # build a canal/rail
+                                                      # the agent may build a rail in the second era, followed by another one for free
+                                                      # if it pays a price of 10 and has access to a beer
+                                                      # will implement this when the agent chooses possible actions
         if self.game.first_era == True:
             if self.coins >= 3:
                 for link in city1.adjacent:
@@ -295,15 +298,15 @@ class Player:
                 coal_sources.extend(self.findCoal(city1))
 
                 if len(coal_sources) != 0:
-                    if isinstance(coal_sources[0], TradingHub) and self.coins >= 5 + self.game.getCoalPrice(): # I'll also need to consider the case when you build 2 rails with one actions
+                    if isinstance(coal_sources[0], TradingHub) and self.coins >= price + self.game.getCoalPrice(): # I'll also need to consider the case when you build 2 rails with one actions
                         # but I need the logic for finding access to a beer, which is also used in the sell action
-                        self.coins -= 5 + self.game.getCoalPrice()
+                        self.coins -= price + self.game.getCoalPrice()
                         self.game.board.coal_market.removeResources()
                         
                         link.changeOwnership(self.id)
                         return True
-                    elif not(isinstance(coal_sources[0], TradingHub)) and self.coins >= 5:
-                        self.coins -= 5
+                    elif not(isinstance(coal_sources[0], TradingHub)) and self.coins >= price:
+                        self.coins -= price
                         link.changeOwnership(self.id)
                         coal_sources[0].building.resources -= 1
                         if coal_sources[0].building.resources == 0:
