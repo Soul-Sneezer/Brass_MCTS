@@ -27,6 +27,7 @@
 
 from enum import Enum
 from queue import PriorityQueue
+import random
 
 class LinkType(Enum):
     BOTH = 0
@@ -51,12 +52,19 @@ class TradingHub:
     def __init__(self, name, bonus):
         self.name = name
         self.bonus = bonus
+        self.coal = 1000 # we'll just pretend this is also some kind of mine
         self.squares = []
         self.taken = []
 
     def addSquare(self, square):
         self.squares.append(square)
         self.taken.append(False)
+    
+    def __hash__(self):
+        return hash(self.name)
+
+    def __eq__(self, other):
+        return isinstance(other, TradingHub) and self.name == other.name
 
 class Market:
     def __init__(self, resources, maximum_resources):
@@ -217,18 +225,8 @@ def BFS(starting_point, check, full_search = False): # used when searching for r
 
 
 
-class Board:
-    iron_works = []
-    coal_mines = []
-    breweries = []
-    manufactories = []
-    potteries = []
-    cotton_mills = []
-
-    cities = []
-    trading_hubs = []
-       
-    def createLocations(self): # basically creates the whole map
+class Board: 
+    def createLocations(self, number_of_players): # basically creates the whole map
         stoke_on_trent = City("Stoke-On-Trent")
         leek = City("Leek")
         belper = City("Belper")
@@ -372,6 +370,54 @@ class Board:
             [(leek, belper), LinkType.RAIL]
         ]
 
+        hub_industries = [ # used to generate trading hub accepted industry types
+            (),
+            (),
+            (IndustryType.MANUFACTORY),
+            (IndustryType.COTTONMILL),
+            (IndustryType.COTTONMILL, IndustryType.POTTERY, IndustryType.MANUFACTORY),
+            (),
+            (IndustryType.POTTERY),
+            (IndustryType.COTTONMILL),
+            (IndustryType.MANUFACTORY)
+        ]
+
+        if number_of_players == 2:
+            sublist = hub_industries[:5]
+            random.shuffle(sublist)
+            shrewsbury.addSquare(Square(sublist[0], shrewsbury))
+            gloucester.addSquare(Square(sublist[1], gloucester))
+            gloucester.addSquare(Square(sublist[2], gloucester))
+            oxford.addSquare(Square(sublist[3], oxford))
+            oxford.addSquare(Square(sublist[4], oxford))
+        elif number_of_players == 3:
+            sublist = hub_industries[:7]
+            random.shuffle(sublist)
+            shrewsbury.addSquare(Square(sublist[0], shrewsbury))
+            gloucester.addSquare(Square(sublist[1], gloucester))
+            gloucester.addSquare(Square(sublist[2], gloucester))
+            oxford.addSquare(Square(sublist[3], oxford))
+            oxford.addSquare(Square(sublist[4], oxford))
+            warrington.addSquare(Square(sublist[5], warrington))
+            warrington.addSquare(Square(sublist[6], warrington))
+        else:
+            random.shuffle(hub_industries)
+            shrewsbury.addSquare(Square(hub_industries[0], shrewsbury))
+            gloucester.addSquare(Square(hub_industries[1], gloucester))
+            gloucester.addSquare(Square(hub_industries[2], gloucester))
+            oxford.addSquare(Square(hub_industries[3], oxford))
+            oxford.addSquare(Square(hub_industries[4], oxford))
+            warrington.addSquare(Square(hub_industries[5], warrington))
+            warrington.addSquare(Square(hub_industries[6], warrington))
+            nottingham.addSquare(Square(hub_industries[7], nottingham))
+            nottingham.addSquare(Square(hub_industries[8], nottingham))
+
+        for connection in connections:
+            cities = connection[0]
+            link_type = connection[1]
+            new_link = Link(cities, link_type)
+            self.links.append(new_link)
+            
         self.cities.append(stoke_on_trent)
         self.cities.append(stone)
         self.cities.append(leek)
@@ -398,12 +444,16 @@ class Board:
         self.trading_hubs.append(nottingham)
         self.trading_hubs.append(oxford)
         self.trading_hubs.append(gloucester)
-        self.trading_hubs.append(shrewsbury)
+        self.trading_hubs.append(shrewsbury) # this one has only one slot
         self.trading_hubs.append(warrington)
-
-    def __init__(self):
+    
+    def __init__(self, number_of_players):
         self.coal_market = Market(13, 14)
         self.iron_market = Market(8, 10)
-        
-        self.createLocations()
+
+        self.cities = []
+        self.trading_hubs = []
+        self.links = [] 
+
+        self.createLocations(number_of_players)
 

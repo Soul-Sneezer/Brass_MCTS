@@ -1,5 +1,4 @@
 from enum import Enum
-from player import Player
 import random
 from . import board
 
@@ -70,15 +69,10 @@ class Game:
         self.cards = []
         self.createCards(number_of_players)
         self.number_of_players = number_of_players
-        self.board = board.Board()    
+        self.board = board.Board(number_of_players)    
         self.players = []
-        self.createPlayers(number_of_players)
         self.game = Game(number_of_players)
         self.distributeCardsToPlayers(number_of_players)
-
-    def createPlayers(self, number_of_players): # the agents
-        for i in range(number_of_players):
-            self.players.append(Player(i, self.game))
     
     def distributeCardsToPlayers(self, number_of_players):
         for j in range(9):
@@ -139,8 +133,11 @@ class Game:
             price = self.board.iron_market.getPrice()
         
         return price
-    
-class Simulation:
-    
-    def run(self): # this will be the 'meat' of this project
-        pass
+
+    def calculateLinkPoints(self):
+        player_points = {i: 0 for i in range(4)}
+        for link in self.board.links:
+            if link.owner_id != None:
+                player_points[link.owner_id] += link.points
+
+        return player_points

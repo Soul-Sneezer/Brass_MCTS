@@ -6,8 +6,7 @@
 
 from board import IndustryType
 from board import BuildingInstance
-from game import Game
-from enum import Enum
+from board import TradingHub
 from board import BFS
 from board import isBrewery
 from board import isTradingHub
@@ -125,6 +124,8 @@ class Player:
         if target.player_id == self.id:
             priority += 100
             priority -= target.building.resources
+        elif isinstance(target, TradingHub):
+            priority += 10
         else:
             priority +=  target.building.resources
 
@@ -200,9 +201,6 @@ class Player:
         for iron_source in iron_sources:
             available_iron += iron_source.building.resources
 
-        for beer_source in beer_sources:
-            available_beer += beer_source.building.resources
-
         if available_coal < needed_coal:
             deficit = (needed_coal - available_coal) 
             cost += self.game.getCoalPrice(deficit)
@@ -263,6 +261,14 @@ class Player:
 
         return False
 
+    def getLink(self, city1, city2):
+        for link in city1.adjacent:
+            for city in link.cities:
+                if city == city2:
+                    return link
+
+        return None
+
     def network(self, city1, city2):         # build a canal/rail
         if self.game.first_era == True:
             if self.coins >= 3:
@@ -274,56 +280,32 @@ class Player:
                             return True
             else:
                 return False
-        else:
-            for link in city1.adjacent:
-                for city in link.cities:
-                    if city == city2:
-                        coal_sources = self.findCoal(city2)
-                        coal_sources.extend(self.findCoal(city1))
+        else: 
+            link = self.getLink(city1, city2)
+            if link != None:
+                coal_sources = self.findCoal(city2)
+                coal_sources.extend(self.findCoal(city1))
 
-                        if len(coal_sources) == 0:
-                            if self.coins >= 5 + self.game.getCoalPrice(): # I'll also need to consider the case when you build 2 rails with one actions
-                                # but I need the logic for finding access to a beer, which is also used in the sell action
-                                self.coins -= 5 + self.game.getCoalPrice()
-                                self.game.board.coal_market.removeResources()
-                                
-                                link.changeOwnership(self.id)
-                                return True
-                            else:
-                                return False
-                        else:
-                            coal_sources[0].building.resources -= 1
-                            if coal_sources[0].building.resources == 0:
-                                sell(coal_sources[0])
-                            if self.coins >= 5:
-                                self.coins -= 5
-                                link.changeOwnership(self.id)
-                                return True
-                            else:
-                                return False
+                if len(coal_sources) != 0:
+                    if isinstance(coal_sources[0], TradingHub) and self.coins >= 5 + self.game.getCoalPrice(): # I'll also need to consider the case when you build 2 rails with one actions
+                        # but I need the logic for finding access to a beer, which is also used in the sell action
+                        self.coins -= 5 + self.game.getCoalPrice()
+                        self.game.board.coal_market.removeResources()
+                        
+                        link.changeOwnership(self.id)
+                        return True
+                    elif not(isinstance(coal_sources[0], TradingHub)) and self.coins >= 5:
+                        self.coins -= 5
+                        link.changeOwnership(self.id)
+                        coal_sources[0].building.resources -= 1
+                        if coal_sources[0].building.resources == 0:
+                            self.sell(coal_sources[0])
 
+                        return True
+                    else:
                         return False
 
         return False
-
-    def network2(self, city1, city2, city3, city4): # only available in second era 
-        if city2 == city3: # so we make one long route
-
-
-        i = 0
-        while needed_coal > 0 and i < len(coal_sources): # first the coal
-            while needed_coal > 0 and coal_sources[i].building.resources > 0:
-                needed_coal -= 1
-                coal_sources[i].building.resources -= 1
-
-            if needed_coal > 0:
-                self.sell(coal_sources[i].building)
-                i = i + 1 
-
-        while needed_coal > 0: # couldn't get all the necessary coal from the board
-            self.game.coal_market.removeResource()
-            needed_coal -= 1
-
 
     def develop(self, industry_types, once=True): # removes one or two cards(lowest level possible) from the available buildings, granting access to higher level buildings
         needed_iron = 0
