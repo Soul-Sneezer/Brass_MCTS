@@ -54,16 +54,32 @@ class TradingHub:
         self.bonus = bonus
         self.squares = []
         self.taken = []
+        self.adjacent = []
 
     def addSquare(self, square):
         self.squares.append(square)
         self.taken.append(False)
+   
+    def __str__(self):
+        string = f"{self.name}: "
+        for square in self.squares:
+            string += f"{square.building_types}   "
+        return string
     
+    def __repr__(self):
+        string = f"{self.name}: "
+        for square in self.squares:
+            string += f"{square.building_types} "
+        return string
+
     def __hash__(self):
         return hash(self.name)
 
     def __eq__(self, other):
         return isinstance(other, TradingHub) and self.name == other.name
+
+    def add_link(self, link):
+        self.adjacent.append(link)
 
 class Market:
     def __init__(self, resources, maximum_resources):
@@ -73,7 +89,7 @@ class Market:
     def getPrice(self):
         resources_spent = self.maximum_resources - self.resources
         if resources_spent % 2 == 1:
-            resources_spent = resources_spent + 1
+            resources_spent = resources_spent - 1
         return 1 + resources_spent / 2
     
     def removeResource(self):
@@ -117,7 +133,21 @@ class Link:
         for city in connected_cities:
             self.cities.append(city)
             city.add_link(self)
-   
+  
+    def __str__(self):
+        string = ""
+        for city in self.cities:
+            string += f"{city.name}   "
+        string += f"({self.link_type})"
+        return string
+
+    def __repr__(self):
+        string = ""
+        for city in self.cities:
+            string += city.name 
+            string += " "
+        return string
+
     def __hash__(self):
         string = ""
         for city in self.cities:
@@ -135,13 +165,25 @@ class City:
         self.name = name
         self.adjacent = []
         self.squares = []
+    
+    def __str__(self):
+        return f"{self.name}"
+    
+    def __repr__(self):
+        return f"{self.name}"
 
     def __hash__(self):
         return hash(self.name)
 
     def __eq__(self, other):
         return isinstance(other, City) and self.name == other.name
-    
+   
+    def printLinks(self):
+        print(self)
+        for link in self.adjacent:
+            print(link)
+        print("")
+
     def add_square(self, buildings):
         self.squares.append(Square(buildings, self))
 
@@ -221,8 +263,6 @@ def BFS(starting_point, check, full_search = False): # used when searching for r
                 pass
 
         return nodes
-
-
 
 class Board: 
     def createLocations(self, number_of_players): # basically creates the whole map
@@ -348,7 +388,7 @@ class Board:
             [(birmingham, nuneaton), LinkType.RAIL],
             [(birmingham, tamworth), LinkType.BOTH],
             [(nuneaton, tamworth), LinkType.BOTH],
-            [(tamworth, walsall), LinkType.BOTH],
+            [(tamworth, walsall), LinkType.RAIL],
             [(tamworth, burton_on_trent), LinkType.BOTH],
             [(burton_on_trent, walsall), LinkType.CANAL],
             [(burton_on_trent, cannock), LinkType.RAIL],

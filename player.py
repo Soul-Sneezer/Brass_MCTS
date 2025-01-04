@@ -14,12 +14,19 @@ from board import isIronWorks
 from board import isCoalMine
 
 class Building:
-    def __init__(self, industry_type, stats, price, beers=0, resources=0):
+    def __init__(self, level, industry_type, stats, price, beers=0, resources=0):
+        self.level = level
         self.industry_type = industry_type
         self.stats = stats
         self.price = price
         self.beers = beers # number of beers required for it to be sold
         self.resources = resources
+
+    def __str__(self):
+        return f"{self.industry_type} {self.level}   stats: {self.stats}   price: {self.price} {self.beers} produces: {self.resources}" 
+
+    def __repr__(self):
+        return f"{self.industry_type} {self.level}   stats: {self.stats}   price: {self.price} {self.beers} produces: {self.resources}" 
 
 buildings = [[[IndustryType.IRONWORKS,( 3, 3, 1), (5, 1, 0), 0, 4, 1],
               [IndustryType.IRONWORKS,( 5, 3, 1), (7, 1, 0), 0, 4, 1],
@@ -53,14 +60,15 @@ buildings = [[[IndustryType.IRONWORKS,( 3, 3, 1), (5, 1, 0), 0, 4, 1],
 
 class Player:
     def createBuildingType(self, i):
-        for building in reversed(buildings[i]):
-            for i in range(building[5]):
+        level = len(buildings[i])
+        for building in reversed(buildings[i]): # taking in reverse so it's easier to remove buildings later
+            for j in range(building[5]):
                 industry_type = building[0]
                 stats = building[1]
                 price = building[2]
                 beers = building[3]
                 resources = building[4]
-                new_building = Building(industry_type, stats, price, beers, resources)
+                new_building = Building(level, industry_type, stats, price, beers, resources)
                 
                 if i == 0:
                     self.iron_works.append(new_building)
@@ -74,6 +82,7 @@ class Player:
                     self.manufactories.append(new_building)
                 else:
                     self.cotton_mills.append(new_building)
+            level -= 1
     
     def createIronWorks(self):
         self.createBuildingType(0)
@@ -109,7 +118,7 @@ class Player:
 
         self.createBuildings()
         self.victory_points = 0
-        self.income = 0
+        self.income = 10
         self.coins = 17
 
         self.has_industry_wildcard = False
@@ -346,7 +355,7 @@ class Player:
                 i = i + 1    
 
         while needed_iron > 0: # couldn't get all the necessary beer from the board
-            self.game.iron_market.removeResource()
+            self.game.board.iron_market.removeResource()
             needed_iron -= 1
 
         for industry_type in industry_types:

@@ -1,6 +1,7 @@
 from enum import Enum
+from player import Player
 import random
-from . import board
+import board
 
 class CardType(Enum):
     LOCATION = 0
@@ -35,11 +36,16 @@ class Card:
         self.card_type = card_type
         self.content = content
 
-game_cards = [[CardType.INDUSTRY, (board.IndustryType.BREWERY), 5],
-              [CardType.INDUSTRY, (board.IndustryType.POTTERY), 3],
-              [CardType.INDUSTRY, (board.IndustryType.IRONWORKS), 4],
-              [CardType.INDUSTRY, (board.IndustryType.COALMINE), 3],
-              [CardType.INDUSTRY, (board.IndustryType.MANUFACTORY, board.IndustryType.COTTONMILL), 8],
+    def __str__(self):
+        return f"({self.card_type} {self.content})\n"
+
+    def __repr__(self):
+        return f"({self.card_type}   {self.content})\n"
+
+game_cards = [[CardType.INDUSTRY, (board.IndustryType.IRONWORKS), 4],
+              [CardType.INDUSTRY, (board.IndustryType.BREWERY), 5],
+              [CardType.INDUSTRY, (board.IndustryType.POTTERY), 2],
+              [CardType.INDUSTRY, (board.IndustryType.COALMINE), 2],
               [CardType.LOCATION, CityEnum.BIRMINGHAM, 3],
               [CardType.LOCATION, CityEnum.REDDITCH, 1],
               [CardType.LOCATION, CityEnum.NUNEATON, 1],
@@ -54,12 +60,16 @@ game_cards = [[CardType.INDUSTRY, (board.IndustryType.BREWERY), 5],
               [CardType.LOCATION, CityEnum.WALSALL ,1],
               [CardType.LOCATION, CityEnum.TAMWORTH, 1],
               [CardType.LOCATION, CityEnum.BURTON_ON_TRENT, 2],
-              [CardType.LOCATION, CityEnum.BELPER, 2],
-              [CardType.LOCATION, CityEnum.DERBY, 3],
+              [CardType.INDUSTRY, (board.IndustryType.MANUFACTORY, board.IndustryType.COTTONMILL), 6],
               [CardType.LOCATION, CityEnum.LEEK, 2],
               [CardType.LOCATION, CityEnum.STOKE_ON_TRENT, 3],
               [CardType.LOCATION, CityEnum.STONE, 2],
-              [CardType.LOCATION, CityEnum.UTTOXETER, 2]]
+              [CardType.LOCATION, CityEnum.UTTOXETER, 2],
+              [CardType.LOCATION, CityEnum.BELPER, 2],
+              [CardType.LOCATION, CityEnum.DERBY, 3],
+              [CardType.INDUSTRY, (board.IndustryType.COALMINE), 1],
+              [CardType.INDUSTRY, (board.IndustryType.POTTERY), 1],
+              [CardType.INDUSTRY, (board.IndustryType.MANUFACTORY, board.IndustryType.COTTONMILL), 2]]
 
 
 class Game:
@@ -67,28 +77,31 @@ class Game:
         self.first_era = True
         self.can_overbuild_mines = False
         self.cards = []
-        self.createCards(number_of_players)
+        self.players = []
         self.number_of_players = number_of_players
         self.board = board.Board(number_of_players)    
-        self.players = []
-        self.game = Game(number_of_players)
+        self.createPlayers(number_of_players)
+        self.createCards(number_of_players)
         self.distributeCardsToPlayers(number_of_players)
     
+    def createPlayers(self, number_of_players):
+        for i in range(number_of_players):
+            new_player = Player(i, self)
+            self.players.append(new_player)
+
     def distributeCardsToPlayers(self, number_of_players):
         for j in range(9):
             for i in range(number_of_players):
-                self.players[i].draw_card(self.game.cards.pop())
+                self.players[i].drawCard(self.cards.pop())
 
         for i in range(number_of_players):
             self.players[i].discard_pile.append(self.players[i].cards.pop())
 
     def createCards(self, number_of_players):
-        card_packs = 0
-
         if number_of_players == 2:
-            card_packs = len(game_cards) - 6
+            card_packs = len(game_cards) - 10
         elif number_of_players == 3:
-            card_packs = len(game_cards) - 2
+            card_packs = len(game_cards) - 5
         elif number_of_players == 4:
             card_packs = len(game_cards)
         else:
@@ -118,19 +131,20 @@ class Game:
         
         return price
 
-    def getIronPrice(self, count):
+    def getIronPrice(self, count=1):
+        price = 0
         if count > 0: # get price if we had already removed more than 1 resource
             count2 = count
             while count > 0:
+                price += self.board.iron_market.getPrice()
                 self.board.iron_market.removeResource()
                 count -= 1
-            price = self.board.iron_market.getPrice()
-
+                
             while count2 > 0:
                 self.board.iron_market.addResource()
                 count2 -= 1
         else:
-            price = self.board.iron_market.getPrice()
+            price += self.board.iron_market.getPrice()
         
         return price
 
