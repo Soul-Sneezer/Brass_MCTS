@@ -165,7 +165,7 @@ class Player:
     def findIron(self):
         available_sources = [] 
         for building_instance in self.buildings_on_board:
-            if building_instance.building.industry_type == IndustryType.BREWERY:
+            if building_instance.building.industry_type == IndustryType.IRONWORKS:
                 available_sources.append(building_instance)
 
         for player in self.game.players:
@@ -185,14 +185,15 @@ class Player:
     def canBuild(self, location, building):
         if not(self.game.first_era) and building.level == 1 and building.industry_type != IndustryType.POTTERY:
             return False    
-        if not(location.isAvailable(building.industry_type, self.id)):
+        if not(location.isAvailable(self.id, building.industry_type)):
             return False
-        if self.coins < building.cost[0]:
+        
+        if self.coins < building.price[0]:
             return False
 
-        cost = building.cost[0]
-        needed_coal = building.cost[1]
-        needed_iron = building.cost[2]
+        cost = building.price[0]
+        needed_coal = building.price[1]
+        needed_iron = building.price[2]
         coal_sources = []
         available_coal = 0
         iron_sources = []
@@ -201,6 +202,7 @@ class Player:
         if needed_coal > 0:
             coal_sources = self.findCoal(location)
 
+        print(coal_sources)
         if needed_iron > 0:
             iron_sources = self.findIron()
 
@@ -239,7 +241,6 @@ class Player:
                 coal_sources[i].building.resources -= 1
 
             if needed_coal > 0:
-                self.sell(coal_sources[i].building)
                 i = i + 1 
 
         while needed_coal > 0: # couldn't get all the necessary coal from the board
@@ -253,13 +254,11 @@ class Player:
                 iron_sources[i].building.resources -= 1
 
             if needed_iron > 0:
-                self.sell(iron_sources[i].building)
                 i = i + 1    
 
         while needed_iron > 0: # couldn't get all the necessary beer from the board
-            self.game.iron_market.removeResource()
+            self.game.board.iron_market.removeResource()
             needed_iron -= 1
-
         return True
 
     def build(self, location, building): # builds a building
@@ -271,7 +270,7 @@ class Player:
             location.addBuilding(new_building)
             self.buildings_on_board.append(new_building) # this makes it easier to score up the buildings at the end
             
-            for link in location.parent.adjacent:
+            for link in location.adjacent:
                 link.points += building.stats[2] # doing this now so I don't have to travel the entrie graph when doing MTS 
             
             return True
@@ -318,8 +317,6 @@ class Player:
                         self.coins -= price
                         link.changeOwnership(self.id)
                         coal_sources[0].building.resources -= 1
-                        if coal_sources[0].building.resources == 0:
-                            self.sell(coal_sources[0])
 
                         return True
                     else:
@@ -335,6 +332,7 @@ class Player:
             needed_iron = 2
 
         iron_sources = self.findIron()    
+        print(iron_sources)
         available_iron = 0
 
         for iron_source in iron_sources:
@@ -351,7 +349,6 @@ class Player:
                 iron_sources[i].building.resources -= 1
 
             if needed_iron > 0:
-                self.sell(iron_sources[i].building)
                 i = i + 1    
 
         while needed_iron > 0: # couldn't get all the necessary beer from the board
@@ -390,25 +387,38 @@ class Player:
         for beer_source in beer_sources:
             available_beer += beer_source.building.resources
 
-        if available_beer < needed_beer:
-            return False
-
         for market in markets:
-            for square in market.squares:
-                for building_types in square.building_types:
-                    for building_type in building_types:
-                        if target.industry_type == building_type and available_beer >= necessary_beer:
-                            return True
+            for i in range(len(market.squares)):
+                square = market.squares[i]
+                if market.taken[i] == False:
+                    for building_types in square.building_types:
+                        for building_type in building_types:
+                            if target.industry_type == building_type and needed_beer == 1:
+                                market.taken[i] = True
+                                market.applyBonus(self)
+                                return True
+                                 
+                            elif needed_beer == 2 and available_beer > 0:
+                                market.taken[i] = True
+                                market.applyBonus(self)
+                                beer_sources[0].building.resources -= 1
+                                return True
+
+        if available_beer >= needed_beer:
+            return True
 
         return False
 
     def sell(self, target): # the target is a building or multiple buildings
-        necessary_beer = target.building.cost[3]
+        necessary_beer = target.building.beers
         
         if self.canSell(target, necessary_beer): # check if has access to enough beer, then you need to determine which beers to use
             target.sold = True
-            self.income += target.stats[1]
-            self.victory_points += target.stats[0]
+            self.income += target.building.stats[1]
+            self.victory_points += target.building.stats[0]
+            return True
+
+        return False
 
     def loan(self):
         self.coins += 30
@@ -465,3 +475,20 @@ class Player:
         else:
             self.income += steps
 
+    def getCoalmine(self): 
+        return self.coal_mines[-1]
+
+    def getIronworks(self): 
+        return self.iron_works[-1]
+
+    def getManufactory(self):
+        return self.manufactories[-1]
+
+    def getCottonmill(self):
+        return self.cotton_mills[-1]
+
+    def getPottery(self):
+        return self.potteries[-1]
+
+    def getBrewery(self):
+        return self.breweries[-1]
