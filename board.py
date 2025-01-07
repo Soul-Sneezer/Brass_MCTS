@@ -126,9 +126,9 @@ class Square:
         self.building_instance = building_instance
 
     def isAvailable(self, player_id, building_type):
-        if self.building_instance != None and self.building_instance.player_id == player_id and self.building_instance.building.industry_type == building_type: # I believe you can overbuild based on the building that is already there, not on the building types of the square
+        if self.building_instance is not None and self.building_instance.player_id == player_id and self.building_instance.building.industry_type == building_type: # I believe you can overbuild based on the building that is already there, not on the building types of the square
             return True
-        if self.building_instance == None:
+        if self.building_instance is None:
             for square_building_type in self.building_types:
                 if square_building_type == building_type:
                     return True
@@ -136,7 +136,7 @@ class Square:
         return False
   
     def getStats(self):
-        if self.building_instance != None:
+        if self.building_instance is not None:
             self.building_instance.getStats()
 
 class Link: 
@@ -223,7 +223,7 @@ def isBrewery(target):
         return None
 
     for square in target.squares:
-        if square.building_instance != None and square.building_instance.building.industry_type == IndustryType.BREWERY:
+        if square.building_instance is not None and square.building_instance.building.industry_type == IndustryType.BREWERY:
             return square.building_instance
 
     return None
@@ -237,7 +237,7 @@ def isIronWorks(target):
         return None 
 
     for square in target.squares:
-        if square.building_instance != None and square.building_instance.building.industry_type == IndustryType.IRONWORKS:
+        if square.building_instance is not None and square.building_instance.building.industry_type == IndustryType.IRONWORKS:
             return square.building_instance
 
     return None
@@ -250,7 +250,7 @@ def isCoalMine(target):
         return None
     
     for square in target.squares:
-        if square.building_instance != None and square.building_instance.building.industry_type == IndustryType.COALMINE:
+        if square.building_instance is not None and square.building_instance.building.industry_type == IndustryType.COALMINE:
             return square.building_instance
 
     return None
@@ -269,7 +269,7 @@ def BFS(starting_point, check, full_search = False): # used when searching for r
             hash_map[node[0]] = True
             if dist_cutoff != -1 and node[1] > dist_cutoff:
                 return nodes
-            elif check(node[0]) != None:
+            elif check(node[0]) is not None:
                 if full_search:
                     nodes.append(check(node[0]))
                 else:

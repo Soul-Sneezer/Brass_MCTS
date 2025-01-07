@@ -105,7 +105,7 @@ class Player:
         self.createPotteries()
         self.createCottonMills()
 
-    def __init__(self, id, game):
+    def __init__(self, id, state, environment):
         self.id = id
         self.iron_works = []
         self.coal_mines = []
@@ -125,7 +125,8 @@ class Player:
         self.has_city_wildcard = False
         self.cards = []
         self.discard_pile = [] # could be useful for checking the probability of getting a certain card 
-        self.game = game # reference to the game you are playing
+        self.state = state # reference to the game you are playing
+        self.environment = environment 
 
     def buildingPriority(self, target): # if it's yours, highest priority, if you have multiple buildings of the same type, the one with the lowest remaining resources should be even higher priority
         # if it's not yours, the more resources are left on it, the better
@@ -143,11 +144,11 @@ class Player:
     def spendCoins(self, price):
         self.coins -= price[0]
         while price[1] > 0:
-            self.game.board.coal_market.removeResources()
+            self.state.board.coal_market.removeResources()
             price[1] -= 1
 
         while price[2] > 0:
-            self.game.board.iron_market.removeResources()
+            self.state.board.iron_market.removeResources()
             price[2] -= 1
 
     def findBeer(self, target):
@@ -168,7 +169,7 @@ class Player:
             if building_instance.building.industry_type == IndustryType.IRONWORKS:
                 available_sources.append(building_instance)
 
-        for player in self.game.players:
+        for player in self.state.players:
             if player.id != self.id:
                 for building_instance in player.buildings_on_board:
                     if building_instance.building.industry_type == IndustryType.IRONWORKS:
@@ -183,8 +184,9 @@ class Player:
         return available_sources
 
     def canBuild(self, location, building):
-        if not(self.game.first_era) and building.level == 1 and building.industry_type != IndustryType.POTTERY:
+        if not(self.environment.first_era) and building.level == 1 and building.industry_type != IndustryType.POTTERY:
             return False    
+        
         if not(location.isAvailable(self.id, building.industry_type)):
             return False
         
@@ -222,11 +224,11 @@ class Player:
             if not(connected_to_market):
                 return False
             deficit = (needed_coal - available_coal) 
-            cost += self.game.getCoalPrice(deficit)
+            cost += self.environment.getCoalPrice(self.state, deficit)
 
         if available_iron < needed_iron:
             deficit = (needed_iron - available_iron)
-            cost += self.game.getIronPrice(deficit)
+            cost += self.environment.getIronPrice(self.state, deficit)
 
         if self.coins < cost:
             return False
@@ -240,11 +242,10 @@ class Player:
                 needed_coal -= 1
                 coal_sources[i].building.resources -= 1
 
-            if needed_coal > 0:
-                i = i + 1 
+            i = i + 1 
 
         while needed_coal > 0: # couldn't get all the necessary coal from the board
-            self.game.coal_market.removeResource()
+            self.state.coal_market.removeResource()
             needed_coal -= 1
 
         i = 0
@@ -256,14 +257,14 @@ class Player:
             if needed_iron > 0:
                 i = i + 1    
 
-        while needed_iron > 0: # couldn't get all the necessary beer from the board
-            self.game.board.iron_market.removeResource()
+        while needed_iron > 0: # couldn't get all the necessary iron from the board
+            self.state.board.iron_market.removeResource()
             needed_iron -= 1
         return True
 
     def build(self, location, building): # builds a building
         if self.canBuild(location, building): # canBuild also handles the spending part, if you can build
-            if building.industry_type == IndustryType.BREWERY and self.game.first_era == False:
+            if building.industry_type == IndustryType.BREWERY and self.environment.first_era == False: # the brewery is the only industry that produces more in the second era
                 building.resources = 2
 
             new_building = BuildingInstance(building, self.id)
@@ -271,7 +272,7 @@ class Player:
             self.buildings_on_board.append(new_building) # this makes it easier to score up the buildings at the end
             
             for link in location.adjacent:
-                link.points += building.stats[2] # doing this now so I don't have to travel the entrie graph when doing MTS 
+                link.points += building.stats[2] # doing this now so I don't have to travel the entire graph later
             
             return True
 
@@ -289,7 +290,7 @@ class Player:
                                                       # the agent may build a rail in the second era, followed by another one for free
                                                       # if it pays a price of 10 and has access to a beer
                                                       # will implement this when the agent chooses possible actions
-        if self.game.first_era == True:
+        if self.environment.first_era == True:
             if self.coins >= 3:
                 for link in city1.adjacent:
                     for city in link.cities:
@@ -301,15 +302,15 @@ class Player:
                 return False
         else: 
             link = self.getLink(city1, city2)
-            if link != None:
+            if link is not None:
                 coal_sources = self.findCoal(city2)
                 coal_sources.extend(self.findCoal(city1))
 
                 if len(coal_sources) != 0:
-                    if isinstance(coal_sources[0], TradingHub) and self.coins >= price + self.game.getCoalPrice(): # I'll also need to consider the case when you build 2 rails with one actions
+                    if isinstance(coal_sources[0], TradingHub) and self.coins >= price + self.environment.getCoalPrice(self.state): # I'll also need to consider the case when you build 2 rails with one actions
                         # but I need the logic for finding access to a beer, which is also used in the sell action
-                        self.coins -= price + self.game.getCoalPrice()
-                        self.game.board.coal_market.removeResources()
+                        self.coins -= price + self.environment.getCoalPrice(self.state)
+                        self.state.board.coal_market.removeResources()
                         
                         link.changeOwnership(self.id)
                         return True
@@ -340,7 +341,7 @@ class Player:
         
         if available_iron < needed_iron:
             deficit = (needed_iron - available_iron)
-            self.coins -= self.game.getIronPrice(deficit)
+            self.coins -= self.environment.getIronPrice(self.state, deficit)
 
         i = 0
         while needed_iron > 0 and i < len(iron_sources):  # consume the iron
@@ -352,7 +353,7 @@ class Player:
                 i = i + 1    
 
         while needed_iron > 0: # couldn't get all the necessary beer from the board
-            self.game.board.iron_market.removeResource()
+            self.state.board.iron_market.removeResource()
             needed_iron -= 1
 
         for industry_type in industry_types:
