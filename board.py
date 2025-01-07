@@ -212,6 +212,13 @@ class City:
 
         return False
 
+    def isConnected(self, other_city):
+        for link in self.adjacent:
+            for city in link.cities:
+                if city is other_city:
+                    return True 
+        return False
+
     def addBuilding(self, building_instance):
         for square in self.squares:
             if square.isAvailable(building_instance.player_id, building_instance.building.industry_type):

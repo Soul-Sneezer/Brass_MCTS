@@ -73,18 +73,22 @@ game_cards = [[CardType.INDUSTRY, (board.IndustryType.IRONWORKS), 4],
 
 
 class State: # the state consists of the current board, and the stats of the players, such as income, vps, cards in hand
-    def __init__(self, number_of_players):
+    def __init__(self, number_of_players, current_player):
         self.cards = []
         self.players = []
+        self.current_player = current_player
         self.number_of_players = number_of_players
-        self.board = board.Board(number_of_players)    
+        self.board = board.Board(number_of_players) 
+    
+    def getPlayer(self):
+        return self.players[current_player]
 
 class Environment:
     def __init__(self, number_of_players, first_era=True):
         self.first_era = first_era
         self.number_of_players = number_of_players
         self.can_overbuild_mines = False
-        self.initial_state = State(number_of_players)
+        self.initial_state = State(number_of_players, 0)
         self.createPlayers(number_of_players)
         self.createCards(number_of_players)
         self.distributeCardsToPlayers(number_of_players)
@@ -119,38 +123,31 @@ class Environment:
 
         random.shuffle(self.initial_state.cards) # shuffle the deck
 
-    def getCoalPrice(self, state, count=0):
+    def getCoalPrice(self, state, count=1):
         price = 0
-        if count > 0: # get price if we had already removed more than 1 resource
-            count2 = count
-            while count > 0:
-                state.board.coal_market.removeResource()
-                count -= 1
-                price += state.board.coal_market.getPrice()
-
-            while count2 > 0:
-                state.board.coal_market.addResource()
-                count2 -= 1
-
-        else:
+        count2 = count
+        while count > 0:
+            state.board.coal_market.removeResource()
+            count -= 1
             price += state.board.coal_market.getPrice()
+
+        while count2 > 0:
+            state.board.coal_market.addResource()
+            count2 -= 1
         
         return price
 
-    def getIronPrice(self, state, count=0):
+    def getIronPrice(self, state, count=1):
         price = 0
-        if count > 0: # get price if we had already removed more than 1 resource
-            count2 = count
-            while count > 0:
-                price += state.board.iron_market.getPrice()
-                state.board.iron_market.removeResource()
-                count -= 1
-                
-            while count2 > 0:
-                state.board.iron_market.addResource()
-                count2 -= 1
-        else:
+        count2 = count
+        while count > 0:
             price += state.board.iron_market.getPrice()
+            state.board.iron_market.removeResource()
+            count -= 1
+            
+        while count2 > 0:
+            state.board.iron_market.addResource()
+            count2 -= 1
         
         return price
 
@@ -165,19 +162,99 @@ class Environment:
     def getInitialState(self):
         return self.initial_state
 
-    def getLegalMoves(self):
-        pass
+    def getLegalMoves(self, state):
+        legal_moves = []
+        current_player = state.getPlayer()
+        if current_player.income >= 3: # add loan movet t
+            new_move = {
+                'type': 'loan'
+            }
+            legal_moves.append(new_move)
+
+        if len(current_player.cards) >= 3: # add scout move
+            new_move = {
+                'type': 'scout'
+            }
+            legal_moves.append(new_move)
+
+        if len(current_player.buildings_on_board) > 0: # add sell moves
+            for building_instance in current_player.building_on_board:
+                if current_player.canSell(building_instance):
+                    new_move = {
+                        'type': 'sell',
+                        'building_instance': building_instance
+                    }
+                    legal_moves.append(new_move)
+
+        for i in range(6):
+            for j in range(7):
+                if j != 6:
+                    costs = current_player.canDevelop([i,j], once=False)
+                    if costs is not None:
+                        new_move = {
+                            'type': 'develop',
+                            'industry1': i,
+                            'industry2': j,
+                            'cost': costs[0],
+                            'needed_iron': costs[1],
+                            'iron_sources': costs[2]
+                        }
+                        legal_moves.append(new_move)
+                else:
+                    costs = current_player.canDevelop([i])
+                    if costs is not None:
+                        new_move = {
+                            'type': 'develop',
+                            'industry1': i,
+                            'industry2': j,
+                            'cost': costs[0],
+                            'needed_iron': costs[1],
+                            'iron_sources': costs[2]
+                        }
+                        legal_moves.append(new_move)
+
+        for card in current_player.cards: # add build moves
+            pass 
+
+        for link in state.board.links:
+            if link.owner_id is None:
+                if self.first_era and link.link_type == LinkType.RAIL:
+                    continue
+                
+                if not(self.first_era) and link.link_type == LinkType.CANAL:
+                    continue 
+
+                costs = current_player.canNetwork(link)
+                if costs is not None:
+                    if environment.first_era:
+                        new_move = {
+                            'type': 'network',
+                            'link': link,
+                            'cost': costs[0]
+                        }
+                        legal_moves.append(new_move)
+                    else:
+                        new_move = {
+                            'type': 'network',
+                            'link': link,
+                            'cost': costs[0],
+                            'needed_coal': costs[1],
+                            'coal_sources': costs[2]
+                        }
+                        legal_moves.append(new_move)
 
     def applyMove(self, move):
-        pass
-
-    def applyTurn(self):
-        self.applyMove()
-        self.applyMove()
-
+        new_state = 
 
     def isTerminal(self, state):
-        pass 
+        if len(state.cards) != 0:
+            return False 
+       
+        for player in state.players:
+            if len(player.cards) != 0:
+                return False 
+
+        return True
 
     def getReward(self):
         pass 
