@@ -3,35 +3,12 @@ from board import IndustryType
 from environment import State
 from environment import Environment
 from player import Player
+from environment import CityEnum
 
 board = Board(2)
 environment = Environment(2)
 state = environment.getInitialState()
 
-name_to_index = {
-    "Stoke On Trent": 0,
-    "Stone": 1,
-    "Leek": 2,
-    "Uttoxeter":4,
-    "Belper":3,
-    "Derby":5,
-    "Stafford":7,
-    "Burton On Trent":6,
-    "Cannock":8,
-    "City0":9,
-    "Coalbrookdale":12,
-    "Wolverhampton":13,
-    "Walsall":10,
-    "Tamworth":11,
-    "Nuneaton":15,
-    "Birmingham":14,
-    "Coventry":16,
-    "Redditch":21,
-    "Dudley":17,
-    "Kidderminster":20,
-    "City1":19,
-    "Worcester":18 
-}
 #print(board.cities)
 #for city in board.cities:
 #    city.printLinks()
@@ -51,10 +28,10 @@ print(player.coins)
 #print(environment.state.board.cities[1].squares[0].building_instance.building.industry_type) # bruh 
 player.coins = 100
 
-dudley = state.board.cities[name_to_index.get("Dudley")]
-kidderminster = state.board.cities[name_to_index.get("Kidderminster")]
-worcester = state.board.cities[name_to_index.get("Worcester")]
-city1 = state.board.cities[name_to_index.get("City1")]
+dudley = state.board.cities[CityEnum.DUDLEY]
+kidderminster = state.board.cities[CityEnum.KIDDERMINSTER]
+worcester = state.board.cities[CityEnum.WORCESTER]
+city1 = state.board.cities[CityEnum.CITY1]
 
 print(player.build(dudley, player.getCoalmine()))
 print(dudley.squares[0].building_instance.building.resources)

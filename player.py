@@ -59,6 +59,33 @@ buildings = [[[IndustryType.IRONWORKS,( 3, 3, 1), (5, 1, 0), 0, 4, 1],
               [IndustryType.COTTONMILL,(11, 1, 0), (20, 0, 2), 1, 0, 2]]]
 
 class Player:
+    def __init__(self, id, state, environment):
+        self.id = id
+        self.iron_works = []
+        self.coal_mines = []
+        self.breweries = []
+        self.potteries = []
+        self.manufactories = []
+        self.cotton_mills = []
+
+        self.buildings_on_board = []
+
+        self.createBuildings()
+        self.victory_points = 0
+        self.income = 10
+        self.coins = 17
+
+        self.has_industry_wildcard = False
+        self.has_city_wildcard = False
+        self.cards = []
+        self.discard_pile = [] # could be useful for checking the probability of getting a certain card 
+        self.state = state # reference to the game you are playing
+        self.environment = environment
+        self.available_cities = [] # reference to cities connected to the network
+                                   # these cities can also be used when extending the network, since their adjacent links are 
+                                   # the only ones that can be used to extend the current network
+        self.links = [] # links placed by player, these form the player's network
+
     def createBuildingType(self, i):
         level = len(buildings[i])
         for building in reversed(buildings[i]): # taking in reverse so it's easier to remove buildings later
@@ -104,30 +131,7 @@ class Player:
         self.createManufactories()
         self.createPotteries()
         self.createCottonMills()
-
-    def __init__(self, id, state, environment):
-        self.id = id
-        self.iron_works = []
-        self.coal_mines = []
-        self.breweries = []
-        self.potteries = []
-        self.manufactories = []
-        self.cotton_mills = []
-
-        self.buildings_on_board = []
-
-        self.createBuildings()
-        self.victory_points = 0
-        self.income = 10
-        self.coins = 17
-
-        self.has_industry_wildcard = False
-        self.has_city_wildcard = False
-        self.cards = []
-        self.discard_pile = [] # could be useful for checking the probability of getting a certain card 
-        self.state = state # reference to the game you are playing
-        self.environment = environment 
-
+    
     def buildingPriority(self, target): # if it's yours, highest priority, if you have multiple buildings of the same type, the one with the lowest remaining resources should be even higher priority
         # if it's not yours, the more resources are left on it, the better
         priority = 0
@@ -277,6 +281,19 @@ class Player:
         
         for link in location.adjacent:
             link.points += building.stats[2] # doing this now so I don't have to travel the entire graph later
+
+        if building.industry_type == IndustryType.IRONWORKS:
+            self.iron_works.remove(building) 
+        elif building.industry_type == IndustryType.COALMINE:
+            self.coal_mines.remove(building) 
+        elif building.industry_type == IndustryType.BREWERY:
+            self.breweries.remove(building)
+        elif building.industry_type == IndustryType.MANUFACTORY:
+            self.manufactories.remove(building) 
+        elif building.industry_type == IndustryType.COTTONMILL:
+            self.cotton_mills.remove(building) 
+        elif building.industry_type == IndustryType.POTTERY:
+            self.potteries.remove(building)
       
     def canNetwork(self, link):
         if self.environment.first_era == True and self.coins >= 3:
@@ -296,11 +313,14 @@ class Player:
                     
         return None
 
-    def network(self, link):                          # build a canal/rail
-                                                      # the agent may build a rail in the second era, followed by another one for free
-                                                      # if it pays a price of 10 and has access to a beer
-                                                      # will implement this when the agent chooses possible actions
+    def network(self, link, cost, needed_coal, coal_sources):   # build a canal/rail
+                                                                # the agent may build a rail in the second era, followed by another one for free
+                                                                # if it pays a price of 10 and has access to a beer
+                                                                # will implement this when the agent chooses possible actions
         link.changeOwnership(self.id)
+        self.links.append(link)
+        for city in link.cities:
+            self.available_cities.append(city)
     
     def canDevelop(self, industry_types, once=True):
         if not(once) and industry_types[0] == industry_types[1]:
