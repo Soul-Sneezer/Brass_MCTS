@@ -3,6 +3,15 @@ from player import Player
 import random
 import board
 
+class MoveType(Enum):
+    BUILD = "build"
+    SELL = "sell"
+    DEVELOP = "develop"
+    SCOUT = "scout"
+    LOAN = "loan"
+    NETWORK = "network"
+    PASS = "pass"
+
 class CardType(Enum):
     LOCATION = 0
     INDUSTRY = 1
@@ -73,33 +82,6 @@ game_cards = [[CardType.INDUSTRY, [board.IndustryType.IRONWORKS], 4],
               [CardType.INDUSTRY, [board.IndustryType.POTTERY], 1],
               [CardType.INDUSTRY, [board.IndustryType.MANUFACTORY, board.IndustryType.COTTONMILL], 2]]
 
-
-class State: # the state consists of the current board, and the stats of the players, such as income, vps, cards in hand
-    def __init__(self, number_of_players, current_player):
-        self.cards = []
-        self.players = []
-        self.actions_taken = 0
-        self.current_player = current_player
-        self.number_of_players = number_of_players
-        self.board = board.Board(number_of_players) 
-    
-    def getPlayer(self):
-        return self.players[current_player]
-    
-    def calculateLinkPoints(self):
-        player_points = {i: 0 for i in range(self.number_of_players)}
-        for link in self.board.links:
-            if link.owner_id is not None:
-                player_points[link.owner_id] += link.points
-
-        return player_points[current_player]
-
-    def giveCardToPlayer(self, player_id):
-        if len(cards) == 0:
-            return None 
-
-        return self.cards.pop()
-
 class Environment:
     def __init__(self, number_of_players, first_era=True):
         self.first_era = first_era
@@ -141,49 +123,78 @@ class Environment:
 
         random.shuffle(self.initial_state.cards) # shuffle the deck
 
-    def getCoalPrice(self, state, count=1):
-        price = 0
-        count2 = count
-        while count > 0:
-            state.board.coal_market.removeResource()
-            count -= 1
-            price += state.board.coal_market.getPrice()
-
-        while count2 > 0:
-            state.board.coal_market.addResource()
-            count2 -= 1
-        
-        return price
-
-    def getIronPrice(self, state, count=1):
-        price = 0
-        count2 = count
-        while count > 0:
-            price += state.board.iron_market.getPrice()
-            state.board.iron_market.removeResource()
-            count -= 1
-            
-        while count2 > 0:
-            state.board.iron_market.addResource()
-            count2 -= 1
-        
-        return price
-
+    
     def getInitialState(self):
         return self.initial_state
 
-    def getLegalMoves(self, state):
+environment = Environment(2)
+
+class State: # the state consists of the current board, and the stats of the players, such as income, vps, cards in hand
+    def __init__(self, number_of_players, current_player):
+        self.cards = []
+        self.players = []
+        self.actions_taken = 0
+        self.current_player = current_player
+        self.number_of_players = number_of_players
+        self.board = board.Board(number_of_players) 
+    
+    def getPlayer(self):
+        return self.players[current_player]
+    
+    def calculateLinkPoints(self, player):
+        player_points = {i: 0 for i in range(self.number_of_players)}
+        for link in self.board.links:
+            if link.owner_id is not None:
+                player_points[link.owner_id] += link.points
+
+        return player_points[player.player_id]
+
+    def giveCardToPlayer(self, player_id):
+        if len(cards) == 0:
+            return None 
+
+        return self.cards.pop()
+
+    def getCoalPrice(self, count=1):
+        price = 0
+        count2 = count
+        while count > 0:
+            price += self.board.coal_market.getPrice()
+            self.board.coal_market.removeResource()
+            count -= 1
+            
+        while count2 > 0:
+            self.board.coal_market.addResource()
+            count2 -= 1
+        
+        return price
+
+    def getIronPrice(self, count=1):
+        price = 0
+        count2 = count
+        while count > 0:
+            price += self.board.iron_market.getPrice()
+            self.board.iron_market.removeResource()
+            count -= 1
+            
+        while count2 > 0:
+            self.board.iron_market.addResource()
+            count2 -= 1
+        
+        return price
+    
+    def getLegalMoves(self):
         legal_moves = []
-        current_player = state.getPlayer()
+        current_player = self.getPlayer()
         if current_player.income >= 3: # add loan movet t
             new_move = {
-                'type': 'loan'
+                'type': MoveType.LOAN
             }
             legal_moves.append(new_move)
 
         if len(current_player.cards) >= 3: # add scout move
             new_move = {
-                'type': 'scout'
+                'type': MoveType.SCOUT
             }
             legal_moves.append(new_move)
 
@@ -192,7 +203,7 @@ class Environment:
                 costs = current_player.canSell(building_instance)
                 if costs is not None:
                     new_move = {
-                        'type': 'sell',
+                        'type': MoveType.SELL,
                         'building_instance': building_instance,
                         'costs': costs
                     }
@@ -206,7 +217,7 @@ class Environment:
                     costs = current_player.canDevelop([industry1, industry2], once=False)
                     if costs is not None:
                         new_move = {
-                            'type': 'develop',
+                            'type': MoveType.DEVELOP,
                             'industry1': industry1,
                             'industry2': industry2,
                             'costs': costs,
@@ -217,7 +228,7 @@ class Environment:
                     costs = current_player.canDevelop([industry1])
                     if costs is not None:
                         new_move = {
-                            'type': 'develop',
+                            'type': MoveType.DEVELOP,
                             'industry1': industry1,
                             'industry2': None,
                             'costs': costs,
@@ -226,60 +237,72 @@ class Environment:
 
         for card in current_player.cards: # add build moves
             if card.type == CardType.LOCATION:
-                city = state.board.cities[card.content]
+                city = self.board.cities[card.content]
                                 
                 costs = canBuild(city, current_player.getIronworks())
                 if costs is not None:
-                    new_move['type'] = 'build'
-                    new_move['city'] = city
-                    new_move['building'] = current_player.getIronworks()
-                    new_move['costs'] = costs
-                    new_move['card'] = card
+                    new_move = {
+                                'type': MoveType.BUILD,
+                                'city': city,
+                                'building': current_player.getIronworks(),
+                                'costs': costs, 
+                                'card': card
+                            }
                     legal_moves.append(new_move)
 
                 costs = canBuild(city, current_player.getCoalmine())
                 if costs is not None:
-                    new_move['type'] = 'build'
-                    new_move['city'] = city
-                    new_move['building'] = current_player.getCoalmine()
-                    new_move['costs'] = costs
-                    new_move['card'] = card
+                    new_move = {
+                                'type': MoveType.BUILD,
+                                'city': city,
+                                'building': current_player.getCoalmine(),
+                                'costs': costs, 
+                                'card': card
+                            }
                     legal_moves.append(new_move)
 
                 costs = canBuild(city, current_player.getBrewery())
                 if costs is not None:
-                    new_move['type'] = 'build'
-                    new_move['city'] = city
-                    new_move['building'] = current_player.getBrewery()
-                    new_move['costs'] = costs
-                    new_move['card'] = card
+                    new_move = {
+                                'type': MoveType.BUILD,
+                                'city': city,
+                                'building': current_player.getBrewery(),
+                                'costs': costs, 
+                                'card': card
+                            }
                     legal_moves.append(new_move)
 
                 costs = canBuild(city, current_player.getManufactory())
                 if costs is not None:
-                    new_move['type'] = 'build'
-                    new_move['city'] = city
-                    new_move['building'] = current_player.getManufactory()
-                    new_move['costs'] = costs
-                    new_move['card'] = card
+                    new_move = {
+                                'type': MoveType.BUILD,
+                                'city': city,
+                                'building': current_player.getManufactory(),
+                                'costs': costs, 
+                                'card': card
+                            }
                     legal_moves.append(new_move)
 
                 costs = canBuild(city, current_player.getCottonmill())
                 if costs is not None:
-                    new_move['type'] = 'build'
-                    new_move['city'] = city
-                    new_move['building'] = current_player.getCottonmill()
-                    new_move['costs'] = costs
-                    new_move['card'] = card
+                    new_move = {
+                                'type': MoveType.BUILD,
+                                'city': city,
+                                'building': current_player.getCottonmill(),
+                                'costs': costs, 
+                                'card': card
+                            }
                     legal_moves.append(new_move)
 
                 costs = canBuild(city, current_player.getPotter())
                 if costs is not None:
-                    new_move['type'] = 'build'
-                    new_move['city'] = city
-                    new_move['building'] = current_player.getPottery()
-                    new_move['costs'] = costs
-                    new_move['card'] = card
+                    new_move = {
+                                'type': MoveType.BUILD,
+                                'city': city,
+                                'building': current_player.getPottery(),
+                                'costs': costs, 
+                                'card': card
+                            }
                     legal_moves.append(new_move)
 
             else:
@@ -287,100 +310,112 @@ class Environment:
                     if card.content == IndustryType.IRONWORKS and canBuild(city, current_player.getIronworks()):
                         costs = canBuild(city, current_player.getIronworks())
                         if costs is not None:
-                            new_move['type'] = 'build'
-                            new_move['city'] = city
-                            new_move['building'] = current_player.getIronworks()
-                            new_move['costs'] = costs
-                            new_move['card'] = card
+                            new_move = {
+                                'type': MoveType.BUILD,
+                                'city': city,
+                                'building': current_player.getIronworks(),
+                                'costs': costs, 
+                                'card': card
+                            }
                             legal_moves.append(new_move)
  
                     if card.content == IndustryType.COALMINE and canBuild(city, current_player.getCoalmine()):
                         costs = canBuild(city, current_player.getCoalmine())
                         if costs is not None:
-                            new_move['type'] = 'build'
-                            new_move['city'] = city
-                            new_move['building'] = current_player.getCoalmine()
-                            new_move['costs'] = costs
-                            new_move['card'] = card
+                            new_move = {
+                                'type': MoveType.BUILD,
+                                'city': city,
+                                'building': current_player.getCoalmine(),
+                                'costs': costs, 
+                                'card': card
+                            }
                             legal_moves.append(new_move)
 
                     if card.content == IndustryType.BREWERY and canBuild(city, current_player.getBrewery()):
                         costs = canBuild(city, current_player.getBrewery())
                         if costs is not None:
-                            new_move['type'] = 'build'
-                            new_move['city'] = city
-                            new_move['building'] = current_player.getBrewery()
-                            new_move['costs'] = costs
-                            new_move['card'] = card
+                            new_move = {
+                                'type': MoveType.BUILD,
+                                'city': city,
+                                'building': current_player.getBrewery(),
+                                'costs': costs, 
+                                'card': card
+                            }
                             legal_moves.append(new_move)
 
                     if card.content == IndustryType.MANUFACTORY and canBuild(city, current_player.getManufactory()):
                         costs = canBuild(city, current_player.getManufactory())
                         if costs is not None:
-                            new_move['type'] = 'build'
-                            new_move['city'] = city
-                            new_move['building'] = current_player.getManufactory()
-                            new_move['costs'] = costs
-                            new_move['card'] = card
+                            new_move = {
+                                'type': MoveType.BUILD,
+                                'city': city,
+                                'building': current_player.getManufactory(),
+                                'costs': costs, 
+                                'card': card
+                            }
                             legal_moves.append(new_move)
 
                     if card.content == IndustryType.COTTONMILL and canBuild(city, current_player.getCottonmill()):
                         costs = canBuild(city, current_player.getCottonmill())
                         if costs is not None:
-                            new_move['type'] = 'build'
-                            new_move['city'] = city
-                            new_move['building'] = current_player.getCottonmill()
-                            new_move['costs'] = costs
-                            new_move['card'] = card
+                            new_move = {
+                                'type': MoveType.BUILD,
+                                'city': city,
+                                'building': current_player.getCottonmill(),
+                                'costs': costs, 
+                                'card': card
+                            }
                             legal_moves.append(new_move)
 
                     if card.content == IndustryType.POTTERY and canBuild(city, current_player.getPottery()):
                         costs = canBuild(city, current_player.getPottery())
                         if costs is not None:
-                            new_move['type'] = 'build'
-                            new_move['city'] = city
-                            new_move['building'] = current_player.getPottery()
-                            new_move['costs'] = costs
-                            new_move['card'] = card
+                            new_move = {
+                                'type': MoveType.BUILD,
+                                'city': city,
+                                'building': current_player.getPottery(),
+                                'costs': costs, 
+                                'card': card
+                            }
                             legal_moves.append(new_move)
 
         for city in current_player.available_cities:
             for link in city.adjacent:
                 if link.owner_id is None:
-                    if self.first_era and link.link_type == LinkType.RAIL:
+                    if environment.first_era and link.link_type == LinkType.RAIL:
                         continue
                     
-                    if not(self.first_era) and link.link_type == LinkType.CANAL:
+                    if not(environment.first_era) and link.link_type == LinkType.CANAL:
                         continue 
 
                     costs = current_player.canNetwork(link)
                     if costs is not None:
                         new_move = {
-                            'type': 'network',
+                            'type': MoveType.NETWORK,
                             'link': link,
                             'costs': costs
                         }
                         legal_moves.append(new_move)
-        legal_moves.append({'type': 'pass'})
+        legal_moves.append({'type': MoveType.PASS})
     
-    def applyMove(self, state, move):
-        new_state = state.clone()
+    def applyMove(self, move):
+        new_state = self.clone()
         new_state.actions_taken += 1
 
-        if move['type'] == 'build':
+        if move['type'] == MoveType.BUILD:
             city = move['city']
             building = move['building']
             costs = move['costs']
             new_state.getPlayer().discardCard(move['card']) # for build the card you discard matters
             new_state.getPlayer().build(city, building, costs)
 
-        elif move['type'] == 'sell':
+        elif move['type'] == MoveType.SELL:
             building_instance = move['building_instance']
             costs = move['costs']
             new_state.getPlayer().discardRandomCard()
             new_state.getPlayer().sell(building_instance, costs)
 
-        elif move['type'] == 'develop':
+        elif move['type'] == MoveType.DEVELOP:
             costs = move['costs']
             industry1 = move['industry1']
             industry2 = move['industry2']
@@ -390,20 +425,23 @@ class Environment:
             else:
                 new_state.getPlayer().develop([industry1, industry2], costs, once=False)
 
-        elif move['type'] == 'network':
+        elif move['type'] == MoveType.NETWORK:
             costs = move['costs']
             link = move['link']
             new_state.getPlayer().discardRandomCard()
             new_state.getPlayer().network(link, costs)
 
-        elif move['type'] == 'loan':
+        elif move['type'] == MoveType.LOAN:
             new_state.getPlayer().discardRandomCard()
             new_state.getPlayer().loan()
 
-        elif move['type'] == 'scout':
+        elif move['type'] == MoveType.SCOUT:
+            new_state.getPlayer().discardRandomCard()
+            new_state.getPlayer().discardRandomCard()
             new_state.getPlayer().discardRandomCard()
             new_state.getPlayer().scout()
-        elif move['type'] == 'pass':
+
+        elif move['type'] == MoveType.PASS:
             new_state.getPlayer().discardRandomCard()
         else:
             print("Something went wrong when applying a move! Unknown move.")
@@ -413,15 +451,23 @@ class Environment:
             new_state.current_player = (new_state.current_player + 1) % new_state.number_of_players
             new_state.actions_taken = 0
 
-    def isTerminal(self, state):
-        if len(state.cards) != 0:
+        return new_state
+
+    def isTerminal(self):
+        if len(self.cards) != 0:
             return False 
        
-        for player in state.players:
+        for player in self.players:
             if len(player.cards) != 0:
                 return False 
 
         return True
 
-    def getReward(self, state): # calculates score of current player
-        return state.getPlayer() + state.calculateLinkPoints() 
+    def getReward(self, current_player): # calculates score of current player
+        opponent_scores = [(player.victory_points + self.calculateLinkPoints(player)) for player in self.players if player.player_id != current_player.player_id]
+        max_opponent_score = max(opponent_scores)
+        if reached_end:
+            return 1.0 if current_player.victory_points + self.calculateLinkPoints(current_player) > max_opponent_score else 0.0 
+        else:
+            player_score = current_player.victory_points + self.calculateLinkPoints(current_player)
+            return player_score - max_opponent_score

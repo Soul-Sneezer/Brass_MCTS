@@ -4,7 +4,8 @@ class MCTSNode:
     def __init__(self, state, parent=None):
         self.state = state 
         self.parent = parent 
-        self.children = [] 
+        self.children = []
+        self.valid_moves = state.getLegalMoves() 
         self.visits = 0
         self.total_reward = 0
 

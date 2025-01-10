@@ -217,6 +217,9 @@ class Player:
                     i = i + 1   
 
     def canBuild(self, location, building):
+        if building is None:
+            return None
+
         if not(self.environment.first_era) and building.level == 1 and building.industry_type != IndustryType.POTTERY:
             return None
         
@@ -544,22 +547,40 @@ class Player:
            else:
                self.cards.append(new_card)
 
-    def getCoalmine(self): 
+    def getCoalmine(self):
+        if len(self.coal_mines) == 0:
+            return None
+
         return self.coal_mines[-1]
 
-    def getIronworks(self): 
+    def getIronworks(self):
+        if len(self.iron_works) == 0:
+            return None
+
         return self.iron_works[-1]
 
     def getManufactory(self):
+        if len(self.manufactories) == 0:
+            return None
+
         return self.manufactories[-1]
 
     def getCottonmill(self):
+        if len(self.cotton_mills) == 0:
+            return None
+
         return self.cotton_mills[-1]
 
     def getPottery(self):
+        if len(self.potteries) == 0:
+            return None
+
         return self.potteries[-1]
 
     def getBrewery(self):
+        if len(self.breweries) == 0:
+            return None
+
         return self.breweries[-1]
 
     def getStats(self):
