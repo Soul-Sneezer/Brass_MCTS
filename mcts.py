@@ -1,3 +1,5 @@
+from graphviz import Digraph
+
 class MCTSNode:
     def __init__(self, state, parent=None):
         self.state = state 
