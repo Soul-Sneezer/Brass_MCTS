@@ -82,7 +82,8 @@ class Player:
         self.discard_pile = [] # could be useful for checking the probability of getting a certain card 
         self.state = state # reference to the game you are playing
         self.environment = environment
-        self.available_cities = [] # reference to cities connected to the network
+        self.available_cities = []
+        # reference to cities connected to the network
                                    # these cities can also be used when extending the network, since their adjacent links are 
                                    # the only ones that can be used to extend the current network
         self.links = [] # links placed by player, these form the player's network
@@ -136,7 +137,7 @@ class Player:
     def buildingPriority(self, target): # if it's yours, highest priority, if you have multiple buildings of the same type, the one with the lowest remaining resources should be even higher priority
         # if it's not yours, the more resources are left on it, the better
         priority = 0
-        if target.player_id == self.id:
+        if not(isinstance(target, TradingHub)) and target.player_id == self.id:
             priority += 100
             priority -= target.building.resources
         elif isinstance(target, TradingHub):
@@ -185,7 +186,6 @@ class Player:
                 if isinstance(coal_sources[i] ,TradingHub):
                     while coal > 0:
                         coal -= 1 
-                        coal_sources[i].removeResource()
                 else:
                     while coal > 0 and coal_sources[i].building.resources > 0:
                         coal -= 1
@@ -261,11 +261,11 @@ class Player:
                 return None
 
             deficit = (needed_coal - available_coal) 
-            cost += self.environment.getCoalPrice(self.state, deficit)
+            cost += self.state.getCoalPrice(deficit)
 
         if available_iron < needed_iron:
             deficit = (needed_iron - available_iron)
-            cost += self.environment.getIronPrice(self.state, deficit)
+            cost += self.state.getIronPrice(deficit)
 
         if self.coins < cost:
             return None
@@ -288,7 +288,9 @@ class Player:
         new_building = BuildingInstance(building, self.id)
         location.addBuilding(new_building)
         self.buildings_on_board.append(new_building) # this makes it easier to score up the buildings at the end
-        
+        if location not in self.available_cities:
+            self.available_cities.append(location)
+
         for link in location.adjacent:
             link.points += building.stats[2] # doing this now so I don't have to travel the entire graph later
 
@@ -334,7 +336,8 @@ class Player:
         link.changeOwnership(self.id)
         self.links.append(link)
         for city in link.cities:
-            self.available_cities.append(city)
+            if city not in self.available_cities:
+                self.available_cities.append(city)
     
     def canDevelop(self, industry_types, once=True):
         if not(once) and industry_types[0] == industry_types[1]:
@@ -397,7 +400,7 @@ class Player:
 
         if available_iron < needed_iron:
             deficit = (needed_iron - available_iron)
-            cost = self.environment.getIronPrice(self.state, deficit)
+            cost = self.state.getIronPrice(deficit)
 
         if self.coins >= cost:
             return [cost, needed_iron, iron_sources] 
@@ -531,14 +534,14 @@ class Player:
             self.income += steps
 
     def endTurn(self):
-        for building_instance in buildings_on_board:
+        for building_instance in self.buildings_on_board:
             industry_type = building_instance.building.industry_type
             if industry_type == IndustryType.IRONWORKS or industry_type == IndustryType.COALMINE or industry_type == IndustryType.BREWERY:
-                if building_instance.building.resources == 0:
-                    self.sell(building_instance)
+                if building_instance.building.resources == 0 and building_instance.sold == False:
+                    self.sell(building_instance, [0, []])
 
-        if self.income >= 10
-        self.coins += self.incomeStepsToLevel(self.income)
+        if self.income >= 10:
+            self.coins += self.incomeStepsToLevel(self.income)
 
         while (len(self.cards) < 8):
            new_card = self.state.giveCardToPlayer(self.id) 

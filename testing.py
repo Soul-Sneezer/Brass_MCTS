@@ -4,6 +4,8 @@ from environment import State
 from environment import Environment
 from player import Player
 from environment import CityEnum
+from environment import environment
+from environment import MoveType
 
 board = Board(2)
 environment = Environment(2)
@@ -69,3 +71,45 @@ player.sell(dudley.squares[1].building_instance, costs)
 print(player.coins)
 print(dudley.squares[1].getStats())
 player.printStats()
+
+environment.getInitialState().legal_moves = environment.getInitialState().getLegalMoves()
+once = False
+
+print(player.iron_works)
+print(player.coal_mines)
+
+for move in environment.getInitialState().getLegalMoves():
+    #if move['type'] == MoveType.DEVELOP and not(once):
+    #    print(move)
+    #    print()
+    #    environment.getInitialState().applyMove(move)
+    #    once = True
+    if move['type'] == MoveType.BUILD and not(once):
+        print(move)
+        print()
+        environment.getInitialState().applyMove(move)
+        once = True
+    #print(move)
+    #p#rint()
+
+print(environment.getInitialState().isTerminal())
+print(environment.getInitialState().getReward(environment.getInitialState().getPlayer()))
+print(player.cards)
+player.discardRandomCard()
+player.discardRandomCard()
+print(player.cards)
+print(player.getStats())
+player.endTurn()
+print(player.getStats())
+player.endTurn()
+print(player.getStats())
+print(player.cards)
+environment.getInitialState().applyMove(environment.getInitialState().legal_moves[0])
+print(player.getStats())
+print(player.cards)
+
+for building_instance in player.buildings_on_board:
+    print(building_instance.building)
+
+print(player.iron_works)
+print(player.coal_mines)
