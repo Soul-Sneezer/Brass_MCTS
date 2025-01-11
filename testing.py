@@ -68,6 +68,13 @@ player.develop([IndustryType.COALMINE], costs)
 
 costs = player.canSell(dudley.squares[1].building_instance)
 player.sell(dudley.squares[1].building_instance, costs)
+
+costs = player.canBuild(worcester, player.getManufactory())
+player.build(worcester, player.getManufactory(), costs)
+
+costs = player.canBuild(city1, player.getBrewery())
+player.build(city1, player.getBrewery(), costs)
+
 print(player.coins)
 print(dudley.squares[1].getStats())
 player.printStats()
@@ -84,7 +91,7 @@ for move in environment.getInitialState().getLegalMoves():
     #    print()
     #    environment.getInitialState().applyMove(move)
     #    once = True
-    if move['type'] == MoveType.BUILD and not(once):
+    if move['type'] == MoveType.SELL and move['building_instance'].building.industry_type == IndustryType.MANUFACTORY and not(once):
         print(move)
         print()
         environment.getInitialState().applyMove(move)
@@ -109,7 +116,7 @@ print(player.getStats())
 print(player.cards)
 
 for building_instance in player.buildings_on_board:
-    print(building_instance.building)
+    print(f"{building_instance.building} {building_instance.sold}")
 
 print(player.iron_works)
 print(player.coal_mines)

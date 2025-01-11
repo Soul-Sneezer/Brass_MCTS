@@ -208,7 +208,7 @@ class Player:
  
         if beer != 0:
             i = 0
-            while beer > 0 and i < len(iron_sources):  # consume the beer
+            while beer > 0 and i < len(beer_sources):  # consume the beer
                 while beer > 0 and beer_sources[i].building.resources > 0:
                     beer -= 1
                     beer_sources[i].building.resources -= 1
