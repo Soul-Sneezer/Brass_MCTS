@@ -185,7 +185,8 @@ class Player:
             while coal > 0: # first the coal
                 if isinstance(coal_sources[i] ,TradingHub):
                     while coal > 0:
-                        coal -= 1 
+                        coal -= 1
+                    break
                 else:
                     while coal > 0 and coal_sources[i].building.resources > 0:
                         coal -= 1
@@ -240,7 +241,6 @@ class Player:
         if needed_coal > 0:
             coal_sources = self.findCoal(location)
 
-        print(coal_sources)
         if needed_iron > 0:
             iron_sources = self.findIron()
 
@@ -295,17 +295,17 @@ class Player:
             link.points += building.stats[2] # doing this now so I don't have to travel the entire graph later
 
         if building.industry_type == IndustryType.IRONWORKS:
-            self.iron_works.remove(building) 
+            self.iron_works.pop() 
         elif building.industry_type == IndustryType.COALMINE:
-            self.coal_mines.remove(building) 
+            self.coal_mines.pop() 
         elif building.industry_type == IndustryType.BREWERY:
-            self.breweries.remove(building)
+            self.breweries.pop()
         elif building.industry_type == IndustryType.MANUFACTORY:
-            self.manufactories.remove(building) 
+            self.manufactories.pop() 
         elif building.industry_type == IndustryType.COTTONMILL:
-            self.cotton_mills.remove(building) 
+            self.cotton_mills.pop() 
         elif building.industry_type == IndustryType.POTTERY:
-            self.potteries.remove(building)
+            self.potteries.pop()
       
     def canNetwork(self, link):
         if self.environment.first_era == True and self.coins >= 3:
@@ -330,8 +330,8 @@ class Player:
                                                                 # if it pays a price of 10 and has access to a beer
                                                                 # will implement this when the agent chooses possible actions
         cost = costs[0]
-        needed_coal = costs[1]
-        coal_sources = costs[2]
+        #needed_coal = costs[1]
+        #coal_sources = costs[2]
 
         link.changeOwnership(self.id)
         self.links.append(link)
@@ -479,10 +479,7 @@ class Player:
         self.coins += 30
         self.adjustIncome(loan=True)
 
-    def scout(self, cards):
-        for card in cards:
-            self.discardCard(card)
-
+    def scout(self):
         self.has_city_wildcard = True 
         self.has_industry_wildcard = True # basically you draw wildcards, but I don't represent them as usual cards because its easier to simply create 2 bools
 
@@ -491,6 +488,10 @@ class Player:
 
     def selectRandomCard(self):
         return random.choice(self.cards)
+
+    def discardCardAtIndex(self, index):
+        card = self.cards[index]
+        self.discardCard(card)
 
     def discardCard(self, target): # discard a card from hand
         self.discard_pile.append(target)

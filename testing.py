@@ -75,6 +75,9 @@ player.build(worcester, player.getManufactory(), costs)
 costs = player.canBuild(city1, player.getBrewery())
 player.build(city1, player.getBrewery(), costs)
 
+costs = player.canNetwork(environment.getInitialState().board.links[0])
+player.network(environment.getInitialState().board.links[0], costs)
+
 print(player.coins)
 print(dudley.squares[1].getStats())
 player.printStats()
@@ -91,13 +94,13 @@ for move in environment.getInitialState().getLegalMoves():
     #    print()
     #    environment.getInitialState().applyMove(move)
     #    once = True
-    if move['type'] == MoveType.SELL and move['building_instance'].building.industry_type == IndustryType.MANUFACTORY and not(once):
-        print(move)
-        print()
-        environment.getInitialState().applyMove(move)
-        once = True
-    #print(move)
-    #p#rint()
+    #if move['type'] == MoveType.SELL and move['building_instance'].building.industry_type == IndustryType.MANUFACTORY and not(once):
+    #    print(move)
+    #    print()
+    #    environment.getInitialState().applyMove(move)
+    #    once = True
+    print(move)
+    print()
 
 print(environment.getInitialState().isTerminal())
 print(environment.getInitialState().getReward(environment.getInitialState().getPlayer()))

@@ -1,4 +1,6 @@
 from graphviz import Digraph
+import math 
+import random
 
 class MCTSNode:
     def __init__(self, state, parent=None):
@@ -24,6 +26,21 @@ class MCTS:
     def __init__(self, environment, exploration_weight=math.sqrt(2)):
         self.environment = environment 
         self.exploration_weight = exploration_weight 
+    
+    def visualize_tree(self, root_node):
+        dot = Digraph(comment='MCTS Tree')
+        self._add_node(dot, root_node)
+        dot.render('brass_tree', format="png", view=True, cleanup=True)
+
+    def _add_node(self, dot, node):
+        node_id = str(id(node))
+        label = f"visits={node.visits}\nreward={node.total_reward}"
+        dot.node(node_id, label=label)
+
+        for child in node.children:
+            child_id = str(id(child))
+            dot.edge(node_id, child_id)
+            self._add_node(dot, child)
 
     def search(self, root_state, iterations=1000):
         root_node = MCTSNode(state=root_state)
@@ -33,7 +50,7 @@ class MCTS:
             node = self._select(root_node)
 
             # Expansion
-            if not self.environment.isTerminal(node.state):
+            if not node.state.isTerminal():
                 node = self._expand(node)
 
             # Simulation 
@@ -42,12 +59,14 @@ class MCTS:
             # Backpropagation
             self._backpropagate(node, reward)
 
-        best_child = root_nde.bestChild(exploration_weight=0)
+        self.visualize_tree(root_node)
+
+        best_child = root_node.bestChild(exploration_weight=0)
         return best_child.state.getLastAction()
 
     def _select(self, node):
-        while not self.environment.isTerminal(node.state) and node.isFullyExpanded():
-            node = node.bestchild(self.exploration_weight)
+        while not node.state.isTerminal() and node.isFullyExpanded():
+            node = node.bestChild(self.exploration_weight)
 
         return node
 
@@ -55,17 +74,17 @@ class MCTS:
         legal_moves = node.state.getLegalMoves()
         unexplored_moves = [move for move in legal_moves if move not in [child.state.getLastAction() for child in node.children]]
         move = random.choice(unexplored_moves)
-        new_state = self.environment.applyMove(node.state, move)
+        new_state = node.state.applyMove(move)
         return node.addChild(new_state)
 
     def _simulate(self, state):
         current_state = state.clone()
-        while not self.environment.isTerminal(current_state):
+        while not current_state.isTerminal():
             legal_moves = current_state.getLegalMoves()
             random_move = random.choice(legal_moves)
-            current_state = self.environment.applyMove(current_state, random_move)
+            current_state = current_state.applyMove(random_move)
 
-        return self.environment.getReward(current_state)
+        return current_state.getReward(current_state.getPlayer())
 
     def _backpropagate(self, node, reward):
         while node is not None:

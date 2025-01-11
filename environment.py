@@ -89,18 +89,23 @@ class State: # the state consists of the current board, and the stats of the pla
     def __init__(self, number_of_players, current_player):
         self.cards = []
         self.players = []
-        self.legal_moves = []
+        self.legal_moves = None
         self.actions_taken = 0
+        self.last_action = None
         self.current_player = current_player
         self.number_of_players = number_of_players
-        self.board = board.Board(number_of_players) 
+        self.board = board.Board(number_of_players)
+        self.reached_end = False
    
     def clone(self):
-        return copy.copy(self)
+        return copy.deepcopy(self)
 
     def getPlayer(self):
         return self.players[self.current_player]
-    
+   
+    def getLastAction(self):
+        return self.last_action
+
     def calculateLinkPoints(self, player):
         player_points = {i: 0 for i in range(self.number_of_players)}
         for link in self.board.links:
@@ -195,7 +200,7 @@ class State: # the state consists of the current board, and the stats of the pla
                         }
                         legal_moves.append(new_move)
 
-        for card in current_player.cards: # add build moves
+        for index, card in enumerate(current_player.cards): # add build moves
             if card.card_type == CardType.LOCATION:
                 city = self.board.cities[card.content.value]
                                 
@@ -206,7 +211,7 @@ class State: # the state consists of the current board, and the stats of the pla
                                 'city': city,
                                 'building': current_player.getIronworks(),
                                 'costs': costs, 
-                                'card': card
+                                'card_index': index
                             }
                     legal_moves.append(new_move)
 
@@ -217,7 +222,7 @@ class State: # the state consists of the current board, and the stats of the pla
                                 'city': city,
                                 'building': current_player.getCoalmine(),
                                 'costs': costs, 
-                                'card': card
+                                'card_index': index
                             }
                     legal_moves.append(new_move)
 
@@ -228,7 +233,7 @@ class State: # the state consists of the current board, and the stats of the pla
                                 'city': city,
                                 'building': current_player.getBrewery(),
                                 'costs': costs, 
-                                'card': card
+                                'card_index': index
                             }
                     legal_moves.append(new_move)
 
@@ -239,7 +244,7 @@ class State: # the state consists of the current board, and the stats of the pla
                                 'city': city,
                                 'building': current_player.getManufactory(),
                                 'costs': costs, 
-                                'card': card
+                                'card_index': index
                             }
                     legal_moves.append(new_move)
 
@@ -250,7 +255,7 @@ class State: # the state consists of the current board, and the stats of the pla
                                 'city': city,
                                 'building': current_player.getCottonmill(),
                                 'costs': costs, 
-                                'card': card
+                                'card_index': index
                             }
                     legal_moves.append(new_move)
 
@@ -261,13 +266,13 @@ class State: # the state consists of the current board, and the stats of the pla
                                 'city': city,
                                 'building': current_player.getPottery(),
                                 'costs': costs, 
-                                'card': card
+                                'card_index': index
                             }
                     legal_moves.append(new_move)
 
             else:
                 for city in current_player.available_cities:
-                    if card.content == IndustryType.IRONWORKS and canBuild(city, current_player.getIronworks()):
+                    if card.content == IndustryType.IRONWORKS:
                         costs = current_player.canBuild(city, current_player.getIronworks())
                         if costs is not None:
                             new_move = {
@@ -275,11 +280,11 @@ class State: # the state consists of the current board, and the stats of the pla
                                 'city': city,
                                 'building': current_player.getIronworks(),
                                 'costs': costs, 
-                                'card': card
+                                'card_index': index
                             }
                             legal_moves.append(new_move)
  
-                    if card.content == IndustryType.COALMINE and canBuild(city, current_player.getCoalmine()):
+                    if card.content == IndustryType.COALMINE:
                         costs = current_player.canBuild(city, current_player.getCoalmine())
                         if costs is not None:
                             new_move = {
@@ -287,11 +292,11 @@ class State: # the state consists of the current board, and the stats of the pla
                                 'city': city,
                                 'building': current_player.getCoalmine(),
                                 'costs': costs, 
-                                'card': card
+                                'card_index': index
                             }
                             legal_moves.append(new_move)
 
-                    if card.content == IndustryType.BREWERY and canBuild(city, current_player.getBrewery()):
+                    if card.content == IndustryType.BREWERY:
                         costs = current_player.canBuild(city, current_player.getBrewery())
                         if costs is not None:
                             new_move = {
@@ -299,11 +304,11 @@ class State: # the state consists of the current board, and the stats of the pla
                                 'city': city,
                                 'building': current_player.getBrewery(),
                                 'costs': costs, 
-                                'card': card
+                                'card_index': index
                             }
                             legal_moves.append(new_move)
 
-                    if card.content == IndustryType.MANUFACTORY and canBuild(city, current_player.getManufactory()):
+                    if card.content == IndustryType.MANUFACTORY:
                         costs = current_player.canBuild(city, current_player.getManufactory())
                         if costs is not None:
                             new_move = {
@@ -311,11 +316,11 @@ class State: # the state consists of the current board, and the stats of the pla
                                 'city': city,
                                 'building': current_player.getManufactory(),
                                 'costs': costs, 
-                                'card': card
+                                'card_index': index
                             }
                             legal_moves.append(new_move)
 
-                    if card.content == IndustryType.COTTONMILL and canBuild(city, current_player.getCottonmill()):
+                    if card.content == IndustryType.COTTONMILL:
                         costs = current_player.canBuild(city, current_player.getCottonmill())
                         if costs is not None:
                             new_move = {
@@ -323,11 +328,11 @@ class State: # the state consists of the current board, and the stats of the pla
                                 'city': city,
                                 'building': current_player.getCottonmill(),
                                 'costs': costs, 
-                                'card': card
+                                'card_index': index
                             }
                             legal_moves.append(new_move)
 
-                    if card.content == IndustryType.POTTERY and canBuild(city, current_player.getPottery()):
+                    if card.content == IndustryType.POTTERY:
                         costs = current_player.canBuild(city, current_player.getPottery())
                         if costs is not None:
                             new_move = {
@@ -335,7 +340,7 @@ class State: # the state consists of the current board, and the stats of the pla
                                 'city': city,
                                 'building': current_player.getPottery(),
                                 'costs': costs, 
-                                'card': card
+                                'card_index': index
                             }
                             legal_moves.append(new_move)
 
@@ -369,7 +374,9 @@ class State: # the state consists of the current board, and the stats of the pla
             city = move['city']
             building = move['building']
             costs = move['costs']
-            new_state.getPlayer().discardCard(move['card']) # for build the card you discard matters
+            #print(move['card_index'])
+            #print(new_state.getPlayer().cards)
+            new_state.getPlayer().discardCardAtIndex(move['card_index']) # for build action the card you discard matters
             new_state.getPlayer().build(city, building, costs)
 
         elif move['type'] == MoveType.SELL:
@@ -408,10 +415,16 @@ class State: # the state consists of the current board, and the stats of the pla
             new_state.getPlayer().discardRandomCard()
         else:
             print("Something went wrong when applying a move! Unknown move.")
+    
+        new_state.last_action = [new_state.current_player, move]
 
         if new_state.actions_taken == 2:
             new_state.getPlayer().endTurn()
             new_state.current_player = (new_state.current_player + 1) % new_state.number_of_players
+            iterations = 0
+            while len(new_state.getPlayer().cards) == 0 and len(new_state.cards) == 0 and iterations != 4:
+                new_state.current_player = (new_state.current_player + 1) % new_state.number_of_players
+                iterations += 1
             new_state.actions_taken = 0
 
         return new_state
@@ -424,6 +437,7 @@ class State: # the state consists of the current board, and the stats of the pla
             if len(player.cards) != 0:
                 return False 
 
+        self.reached_end = True
         return True
 
     def getReward(self, current_player): # calculates score of current player
@@ -436,7 +450,7 @@ class State: # the state consists of the current board, and the stats of the pla
         max_opponent_score = max(opponents, key=lambda x: x[1])[1]
         
         player_score = current_player.victory_points + self.calculateLinkPoints(current_player)
-        if environment.reached_end:
+        if self.reached_end:
             if player_score > max_opponent_score:
                 return 1.0 
             elif player_score == max_opponent_score:
@@ -469,7 +483,6 @@ class Environment:
         self.createPlayers(number_of_players)
         self.createCards(number_of_players)
         self.distributeCardsToPlayers(number_of_players)
-        self.reached_end = False
     
     def createPlayers(self, number_of_players):
         for i in range(number_of_players):
