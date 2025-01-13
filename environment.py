@@ -417,8 +417,14 @@ class State: # the state consists of the current board, and the stats of the pla
             print("Something went wrong when applying a move! Unknown move.")
     
         new_state.last_action = [new_state.current_player, move]
-
         if new_state.actions_taken == 2:
+            for building_instance in new_state.getPlayer().buildings_on_board: # flip all mines with 0 resources
+                industry_type = building_instance.building.industry_type
+                if industry_type == IndustryType.IRONWORKS or industry_type == IndustryType.COALMINE or industry_type == IndustryType.BREWERY:
+                    if building_instance.building.resources == 0:
+                        costs = new_state.getPlayer().canSell(building_instance)
+                        if costs is not None:
+                            new_state.getPlayer().sell(building_instance, costs)
             new_state.getPlayer().endTurn()
             new_state.current_player = (new_state.current_player + 1) % new_state.number_of_players
             iterations = 0

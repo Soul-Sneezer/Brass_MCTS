@@ -182,7 +182,7 @@ class Player:
     def consumeResources(self, coal, coal_sources, iron, iron_sources, beer, beer_sources):
         if coal != 0:
             i = 0
-            while coal > 0: # first the coal
+            while coal > 0 and i < len(coal_sources): # first the coal
                 if isinstance(coal_sources[i] ,TradingHub):
                     while coal > 0:
                         coal -= 1

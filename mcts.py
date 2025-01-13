@@ -26,38 +26,77 @@ class MCTS:
     def __init__(self, environment, exploration_weight=math.sqrt(2)):
         self.environment = environment 
         self.exploration_weight = exploration_weight 
-    
-    def visualize_tree(self, root_node):
-        dot = Digraph(comment='MCTS Tree')
-        self._add_node(dot, root_node)
-        dot.render('brass_tree', format="png", view=True, cleanup=True)
+  
+    def visualize_tree(self, root, max_nodes=300):
+        dot = Digraph(comment="MCTS Tree")
+        def make_label(node):
+            label = f"Visits: {node.visits}\nValue: {node.total_reward:.2f}"
+            if node.state.last_action is not None:
+                label += f"\nPlayer: {node.state.last_action[0]} Move: {node.state.last_action[1]['type']}"
+            return label
 
-    def _add_node(self, dot, node):
-        node_id = str(id(node))
-        label = f"visits={node.visits}\nreward={node.total_reward}"
-        dot.node(node_id, label=label)
+        node_id_map = {}
+        node_id_map[root] = 0
+        dot.node("0", label=make_label(root))
 
-        for child in node.children:
-            child_id = str(id(child))
-            dot.edge(node_id, child_id)
-            self._add_node(dot, child)
+        current_layer = [root]
+        layer = 0
 
-    def search(self, root_state, iterations=1000):
+        while current_layer and len(node_id_map) < max_nodes:
+            next_layer_candidates = []
+            for node in current_layer:
+                for child in node.children:
+                    if len(node_id_map) >= max_nodes:
+                        break
+                    if child not in node_id_map:
+                        if child.visits > 0:
+                            metric = child.total_reward / child.visits
+                        else:
+                            metric = 0.0  
+
+                        parent_id = node_id_map[node]
+                        next_layer_candidates.append((child, parent_id, metric))
+            
+            if not next_layer_candidates:
+                break
+
+            next_layer_candidates.sort(key=lambda x: x[2], reverse=True)
+            next_layer_candidates = next_layer_candidates[:30]
+
+            next_layer = []
+            for child, parent_id, metric in next_layer_candidates:
+                if child not in node_id_map:
+                    new_id = len(node_id_map)
+                    node_id_map[child] = new_id
+                    dot.node(str(new_id), label=make_label(child))
+                    dot.edge(str(parent_id), str(new_id))
+                    next_layer.append(child)
+                else:
+                    child_id = node_id_map[child]
+                    dot.edge(str(parent_id), str(child_id))
+            
+            current_layer = next_layer
+            layer += 1
+
+        dot.render('brass_tree', format="png", cleanup=True)
+
+    def search(self, root_state, iterations=100):
         root_node = MCTSNode(state=root_state)
 
-        for _ in range(iterations):
+        for i in range(iterations):
+            print(i)
             # Selection
             node = self._select(root_node)
 
             # Expansion
             if not node.state.isTerminal():
-                node = self._expand(node)
+                child = self._expand(node)
 
             # Simulation 
-            reward = self._simulate(node.state)
+            reward = self._simulate(child.state)
 
             # Backpropagation
-            self._backpropagate(node, reward)
+            self._backpropagate(child, reward)
 
         self.visualize_tree(root_node)
 
