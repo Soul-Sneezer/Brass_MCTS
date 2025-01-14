@@ -112,6 +112,8 @@ class MCTS:
 
     def _expand(self, node):
         unexplored_moves = node.unexplored_moves
+        if len(unexplored_moves) == 0:
+            return node
         move = random.choice(unexplored_moves)
         node.unexplored_moves.remove(move)
         node.explored_moves.append(move)

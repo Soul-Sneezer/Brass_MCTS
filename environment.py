@@ -519,8 +519,7 @@ class Environment:
                 self.initial_state.cards.append(new_card)
 
         random.shuffle(self.initial_state.cards) # shuffle the deck
-
-    
+ 
     def getInitialState(self):
         return self.initial_state
 
