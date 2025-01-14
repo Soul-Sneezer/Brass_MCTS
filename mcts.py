@@ -6,8 +6,9 @@ class MCTSNode:
     def __init__(self, state, parent=None):
         self.state = state 
         self.parent = parent 
+        self.explored_moves = []
+        self.unexplored_moves = state.getLegalMoves()
         self.children = []
-        self.valid_moves = state.getLegalMoves() 
         self.visits = 0
         self.total_reward = 0
 
@@ -110,16 +111,20 @@ class MCTS:
         return node
 
     def _expand(self, node):
-        legal_moves = node.state.getLegalMoves()
-        unexplored_moves = [move for move in legal_moves if move not in [child.state.getLastAction() for child in node.children]]
+        unexplored_moves = node.unexplored_moves
         move = random.choice(unexplored_moves)
+        node.unexplored_moves.remove(move)
+        node.explored_moves.append(move)
         new_state = node.state.applyMove(move)
         return node.addChild(new_state)
 
     def _simulate(self, state):
         current_state = state.clone()
         while not current_state.isTerminal():
-            legal_moves = current_state.getLegalMoves()
+            if current_state.legal_moves is None:
+                legal_moves = current_state.getLegalMoves()
+            else:
+                legal_moves = current_state.legal_moves
             random_move = random.choice(legal_moves)
             current_state = current_state.applyMove(random_move)
 

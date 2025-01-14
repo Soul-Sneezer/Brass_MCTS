@@ -5,5 +5,5 @@ import math
 mcts = MCTS(environment=environment, exploration_weight=math.sqrt(2))
 
 root_state = environment.getInitialState()
-best_action = mcts.search(root_state, iterations=1000)
+best_action = mcts.search(root_state, iterations=100)
 
