@@ -7,6 +7,9 @@ The scope of this project is to generate a state tree that explores the most pro
 
 This can be further expanded by changing game parameters. For example, maybe by distributing the cards in a certain manner, we can find out how much of a factor luck is, and whether there are certain types of cards that are extremely valuable compared to the other ones.
 
+## Project Status 🚧
+This project is currently **unfinished** and is a **work in progress**. While the core functionality is implemented, it requires further development, testing, and refinement.
+
 ## Key Features
 ### Core Game Implementation
 - Complete Brass Birmingham rules implementation
