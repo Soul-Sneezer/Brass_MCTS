@@ -1,6 +1,7 @@
 from graphviz import Digraph
 import math 
 import random
+from profiler import record_performance
 
 class MCTSNode:
     def __init__(self, state, parent=None):
@@ -8,7 +9,7 @@ class MCTSNode:
         self.parent = parent 
         self.explored_moves = []
         self.unexplored_moves = state.getLegalMoves()
-        self.children = []
+        self.children = [] 
         self.visits = 0
         self.total_reward = 0
 
@@ -24,9 +25,10 @@ class MCTSNode:
         return new_node
 
 class MCTS:
-    def __init__(self, environment, exploration_weight=math.sqrt(2)):
+    def __init__(self, environment, exploration_weight=math.sqrt(2), iterations=100):
         self.environment = environment 
-        self.exploration_weight = exploration_weight 
+        self.exploration_weight = exploration_weight
+        self.iterations = iterations
   
     def visualize_tree(self, root, max_nodes=300):
         dot = Digraph(comment="MCTS Tree")
@@ -81,10 +83,11 @@ class MCTS:
 
         dot.render('brass_tree', format="png", cleanup=True)
 
-    def search(self, root_state, iterations=100):
-        root_node = MCTSNode(state=root_state)
+    @record_performance
+    def search(self):
+        root_node = MCTSNode(state=self.environment.getInitialState())
 
-        for i in range(iterations):
+        for i in range(self.iterations):
             print(i)
             # Selection
             node = self._select(root_node)
@@ -104,12 +107,14 @@ class MCTS:
         best_child = root_node.bestChild(exploration_weight=0)
         return best_child.state.getLastAction()
 
+    @record_performance
     def _select(self, node):
         while not node.state.isTerminal() and node.isFullyExpanded():
             node = node.bestChild(self.exploration_weight)
 
         return node
 
+    @record_performance
     def _expand(self, node):
         unexplored_moves = node.unexplored_moves
         if len(unexplored_moves) == 0:
@@ -120,6 +125,7 @@ class MCTS:
         new_state = node.state.applyMove(move)
         return node.addChild(new_state)
 
+    @record_performance
     def _simulate(self, state):
         current_state = state.clone()
         while not current_state.isTerminal():
@@ -132,6 +138,7 @@ class MCTS:
 
         return current_state.getReward(current_state.getPlayer())
 
+    @record_performance
     def _backpropagate(self, node, reward):
         while node is not None:
             node.visits += 1 
