@@ -6,7 +6,7 @@ from profiler import plot_performance
 
 recorder = PerformanceRecorder()
 
-mcts = MCTS(environment=environment, exploration_weight=math.sqrt(2), iterations=10000)
+mcts = MCTS(environment=environment, exploration_weight=math.sqrt(2), iterations=10)
 mcts.search()
 
 plot_performance()

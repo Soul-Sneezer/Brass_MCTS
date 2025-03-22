@@ -2,6 +2,7 @@ from enum import Enum
 from player import Player
 from board import IndustryType
 from board import LinkType
+from profiler import record_performance
 import random
 import board
 import copy
@@ -147,7 +148,8 @@ class State: # the state consists of the current board, and the stats of the pla
             count2 -= 1
         
         return price
-    
+   
+    @record_performance
     def getLegalMoves(self):
         legal_moves = []
         current_player = self.getPlayer()
@@ -365,7 +367,8 @@ class State: # the state consists of the current board, and the stats of the pla
         legal_moves.append({'type': MoveType.PASS})
 
         return legal_moves
-    
+   
+    @record_performance
     def applyMove(self, move):
         new_state = self.clone()
         new_state.actions_taken += 1

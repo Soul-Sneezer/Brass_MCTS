@@ -1,7 +1,8 @@
 from graphviz import Digraph
+from profiler import record_performance
 import math 
 import random
-from profiler import record_performance
+import time
 
 class MCTSNode:
     def __init__(self, state, parent=None):
@@ -24,8 +25,10 @@ class MCTSNode:
         self.children.append(new_node)
         return new_node
 
+duration = [ 0, 0, 0, 0, 0]
+
 class MCTS:
-    def __init__(self, environment, exploration_weight=math.sqrt(2), iterations=100):
+    def __init__(self, environment, exploration_weight=math.sqrt(2), iterations=1000):
         self.environment = environment 
         self.exploration_weight = exploration_weight
         self.iterations = iterations
@@ -88,7 +91,6 @@ class MCTS:
         root_node = MCTSNode(state=self.environment.getInitialState())
 
         for i in range(self.iterations):
-            print(i)
             # Selection
             node = self._select(root_node)
 
