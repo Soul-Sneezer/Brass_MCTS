@@ -9,18 +9,18 @@ class MCTSNode:
         self.state = state 
         self.parent = parent 
         self.explored_moves = []
-        self.unexplored_moves = state.getLegalMoves()
+        self.unexplored_moves = state.get_legal_moves()
         self.children = [] 
         self.visits = 0
         self.total_reward = 0
 
-    def isFullyExpanded(self):
-        return len(self.children) == len(self.state.getLegalMoves())
+    def is_fully_expanded(self):
+        return len(self.children) == len(self.state.get_legal_moves())
 
-    def bestChild(self, exploration_weight=0):
+    def best_child(self, exploration_weight=0):
         return max(self.children, key=lambda child: (child.total_reward / (child.visits + 1e-6)) + exploration_weight * math.sqrt(math.log(self.visits + 1) / (child.visits + 1e-6)))
 
-    def addChild(self, child_state):
+    def add_child(self, child_state):
         new_node = MCTSNode(state=child_state, parent=self)
         self.children.append(new_node)
         return new_node
@@ -88,14 +88,14 @@ class MCTS:
 
     @record_performance
     def search(self):
-        root_node = MCTSNode(state=self.environment.getInitialState())
+        root_node = MCTSNode(state=self.environment.get_initial_state())
 
         for i in range(self.iterations):
             # Selection
             node = self._select(root_node)
 
             # Expansion
-            if not node.state.isTerminal():
+            if not node.state.is_terminal():
                 child = self._expand(node)
 
             # Simulation 
@@ -106,13 +106,13 @@ class MCTS:
 
         self.visualize_tree(root_node)
 
-        best_child = root_node.bestChild(exploration_weight=0)
-        return best_child.state.getLastAction()
+        best_child = root_node.best_child(exploration_weight=0)
+        return best_child.state.get_last_action()
 
     @record_performance
     def _select(self, node):
-        while not node.state.isTerminal() and node.isFullyExpanded():
-            node = node.bestChild(self.exploration_weight)
+        while not node.state.is_terminal() and node.is_fully_expanded():
+            node = node.best_child(self.exploration_weight)
 
         return node
 
@@ -124,21 +124,21 @@ class MCTS:
         move = random.choice(unexplored_moves)
         node.unexplored_moves.remove(move)
         node.explored_moves.append(move)
-        new_state = node.state.applyMove(move)
-        return node.addChild(new_state)
+        new_state = node.state.apply_move(move)
+        return node.add_child(new_state)
 
     @record_performance
     def _simulate(self, state):
         current_state = state.clone()
-        while not current_state.isTerminal():
+        while not current_state.is_terminal():
             if current_state.legal_moves is None:
-                legal_moves = current_state.getLegalMoves()
+                legal_moves = current_state.get_legal_moves()
             else:
                 legal_moves = current_state.legal_moves
             random_move = random.choice(legal_moves)
-            current_state = current_state.applyMove(random_move)
+            current_state = current_state.apply_move(random_move)
 
-        return current_state.getReward(current_state.getPlayer())
+        return current_state.get_reward(current_state.get_player())
 
     @record_performance
     def _backpropagate(self, node, reward):

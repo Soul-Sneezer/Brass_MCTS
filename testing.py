@@ -9,22 +9,22 @@ from environment import MoveType
 
 board = Board(2)
 environment = Environment(2)
-state = environment.getInitialState()
+state = environment.get_initial_state()
 
 #print(board.cities)
 #for city in board.cities:
 #    city.printLinks()
 
 #print(board.trading_hubs)
-board.coal_market.removeResource()
-board.iron_market.removeResource()
-board.iron_market.removeResource()
-print(board.coal_market.getPrice())
-print(board.iron_market.getPrice())
+board.coal_market.remove_resource()
+board.iron_market.remove_resource()
+board.iron_market.remove_resource()
+print(board.coal_market.get_price())
+print(board.iron_market.get_price())
 
 print(state.cards)
 player = state.players[0]
-#print(player.build(environment.state.board.cities[1], player.getManufactory()))
+#print(player.build(environment.state.board.cities[1], player.get_manufactory()))
 print(state.board.cities)
 print(player.coins)
 #print(environment.state.board.cities[1].squares[0].building_instance.building.industry_type) # bruh 
@@ -35,87 +35,87 @@ kidderminster = state.board.cities[CityEnum.KIDDERMINSTER.value]
 worcester = state.board.cities[CityEnum.WORCESTER.value]
 city1 = state.board.cities[CityEnum.CITY1.value]
 
-costs = player.canBuild(dudley, player.getCoalmine())
+costs = player.can_build(dudley, player.get_coalmine())
 print(f"building costs 1: {costs}")
-player.build(dudley, player.getCoalmine(), costs)
+player.build(dudley, player.get_coalmine(), costs)
 print(dudley.squares[0].building_instance.building.resources)
-print(dudley.isAvailable(0, IndustryType.IRONWORKS))
+print(dudley.is_available(0, IndustryType.IRONWORKS))
 #print(environment.state.board.cities[name_to_index.get("Dudley")].squares[0].building_instance.building.industry_type)
-costs = player.canBuild(dudley, player.getIronworks())
+costs = player.can_build(dudley, player.get_ironworks())
 print(f"building costs 2: {costs}")
-player.build(dudley, player.getIronworks(), costs)
-print(dudley.squares[0].getStats())
-print(dudley.squares[1].getStats())
+player.build(dudley, player.get_ironworks(), costs)
+print(dudley.squares[0].get_stats())
+print(dudley.squares[1].get_stats())
 print(player.coins)
 
 print(player.iron_works)
 
-costs = player.canDevelop([IndustryType.IRONWORKS])
+costs = player.can_develop([IndustryType.IRONWORKS])
 print(f"develop costs {costs}")
 player.develop([IndustryType.IRONWORKS], costs)
 print(player.iron_works)
 
-costs = player.canDevelop([IndustryType.IRONWORKS])
+costs = player.can_develop([IndustryType.IRONWORKS])
 print(f"develop costs {costs}")
 player.develop([IndustryType.IRONWORKS], costs)
 print(player.iron_works)
 
-costs = player.canDevelop([IndustryType.COALMINE])
+costs = player.can_develop([IndustryType.COALMINE])
 player.develop([IndustryType.COALMINE], costs)
 
-costs = player.canDevelop([IndustryType.COALMINE])
+costs = player.can_develop([IndustryType.COALMINE])
 player.develop([IndustryType.COALMINE], costs)
 
-costs = player.canSell(dudley.squares[1].building_instance)
+costs = player.can_sell(dudley.squares[1].building_instance)
 player.sell(dudley.squares[1].building_instance, costs)
 
-costs = player.canBuild(worcester, player.getManufactory())
-player.build(worcester, player.getManufactory(), costs)
+costs = player.can_build(worcester, player.get_manufactory())
+player.build(worcester, player.get_manufactory(), costs)
 
-costs = player.canBuild(city1, player.getBrewery())
-player.build(city1, player.getBrewery(), costs)
+costs = player.can_build(city1, player.get_brewery())
+player.build(city1, player.get_brewery(), costs)
 
-costs = player.canNetwork(environment.getInitialState().board.links[0])
-player.network(environment.getInitialState().board.links[0], costs)
+costs = player.can_network(environment.get_initial_state().board.links[0])
+player.network(environment.get_initial_state().board.links[0], costs)
 
 print(player.coins)
-print(dudley.squares[1].getStats())
-player.printStats()
+print(dudley.squares[1].get_stats())
+player.print_stats()
 
-environment.getInitialState().legal_moves = environment.getInitialState().getLegalMoves()
+environment.get_initial_state().legal_moves = environment.get_initial_state().get_legal_moves()
 once = False
 
 print(player.iron_works)
 print(player.coal_mines)
 
-for move in environment.getInitialState().getLegalMoves():
+for move in environment.get_initial_state().get_legal_moves():
     #if move['type'] == MoveType.DEVELOP and not(once):
     #    print(move)
     #    print()
-    #    environment.getInitialState().applyMove(move)
+    #    environment.get_initial_state().apply_move(move)
     #    once = True
     #if move['type'] == MoveType.SELL and move['building_instance'].building.industry_type == IndustryType.MANUFACTORY and not(once):
     #    print(move)
     #    print()
-    #    environment.getInitialState().applyMove(move)
+    #    environment.get_initial_state().apply_move(move)
     #    once = True
     print(move)
     print()
 
-print(environment.getInitialState().isTerminal())
-print(environment.getInitialState().getReward(environment.getInitialState().getPlayer()))
+print(environment.get_initial_state().is_terminal())
+print(environment.get_initial_state().get_reward(environment.get_initial_state().get_player()))
 print(player.cards)
-player.discardRandomCard()
-player.discardRandomCard()
+player.discard_random_cards()
+player.discard_random_cards()
 print(player.cards)
-print(player.getStats())
-player.endTurn()
-print(player.getStats())
-player.endTurn()
-print(player.getStats())
+print(player.get_stats())
+player.end_turn()
+print(player.get_stats())
+player.end_turn()
+print(player.get_stats())
 print(player.cards)
-environment.getInitialState().applyMove(environment.getInitialState().legal_moves[0])
-print(player.getStats())
+environment.get_initial_state().apply_move(environment.get_initial_state().legal_moves[0])
+print(player.get_stats())
 print(player.cards)
 
 for building_instance in player.buildings_on_board:

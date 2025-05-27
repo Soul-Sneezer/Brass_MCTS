@@ -56,11 +56,11 @@ class TradingHub:
         self.taken = []
         self.adjacent = []
 
-    def addSquare(self, square):
+    def add_square(self, square):
         self.squares.append(square)
         self.taken.append(False)
   
-    def applyBonus(self, player):
+    def apply_bonus(self, player): # TO DO
         pass
 
     def __str__(self):
@@ -89,20 +89,20 @@ class Market:
         self.resources = resources
         self.maximum_resources = maximum_resources
 
-    def getPrice(self):
+    def get_price(self):
         resources_spent = self.maximum_resources - self.resources
         if resources_spent % 2 == 1:
             resources_spent = resources_spent - 1
         return 1 + resources_spent / 2
     
-    def removeResource(self):
+    def remove_resource(self):
         if self.resources != 0:
             self.resources -= 1
 
-    def addResource(self):
+    def add_resource(self):
         if self.resources != self.maximum_resources:
             self.resources += 1
-            return self.getPrice()
+            return self.get_price()
 
         return 0
 
@@ -112,7 +112,7 @@ class BuildingInstance:
         self.player_id = player_id
         self.sold = False
     
-    def getStats(self):
+    def get_stats(self):
         print(f"belongs to: {self.player_id}      sold: {self.sold}")
         print(f"stats: {self.building.stats}   resources: {self.building.resources}")
 
@@ -122,10 +122,10 @@ class Square:
         self.building_instance = None # Reference to building instance
         self.parent = parent
 
-    def addBuilding(self, building_instance):
+    def add_building(self, building_instance):
         self.building_instance = building_instance
 
-    def isAvailable(self, player_id, building_type):
+    def is_available(self, player_id, building_type):
         if self.building_instance is not None and self.building_instance.player_id == player_id and self.building_instance.building.industry_type == building_type: # I believe you can overbuild based on the building that is already there, not on the building types of the square
             return True
         if self.building_instance is None:
@@ -135,9 +135,9 @@ class Square:
 
         return False
   
-    def getStats(self):
+    def get_stats(self):
         if self.building_instance is not None:
-            self.building_instance.getStats()
+            self.building_instance.get_stats()
 
 class Link: 
     def __init__(self, connected_cities, link_type):
@@ -172,7 +172,7 @@ class Link:
     def __eq__(self, other):
         return isinstance(other, Link) and self.cities == other.cities
 
-    def changeOwnership(self, owner):
+    def change_ownership(self, owner):
         self.owner_id = owner
 
 class City:
@@ -193,74 +193,78 @@ class City:
     def __eq__(self, other):
         return isinstance(other, City) and self.name == other.name
    
-    def printLinks(self):
+    def print_links(self):
         print(self)
         for link in self.adjacent:
             print(link)
         print("")
 
-    def addSquare(self, buildings):
+    def add_square(self, buildings):
         self.squares.append(Square(buildings, self))
 
     def add_link(self, link):
         self.adjacent.append(link)
 
-    def isAvailable(self, player_id, building_type):
+    def is_available(self, player_id, building_type):
         for square in self.squares:
-            if square.isAvailable(player_id, building_type):
+            if square.is_available(player_id, building_type):
                 return True
 
         return False
 
-    def isConnected(self, other_city):
+    def is_connected(self, other_city):
         for link in self.adjacent:
             for city in link.cities:
                 if city is other_city:
                     return True 
         return False
 
-    def addBuilding(self, building_instance):
+    def add_building(self, building_instance):
         for square in self.squares:
-            if square.isAvailable(building_instance.player_id, building_instance.building.industry_type):
-                square.addBuilding(building_instance)
+            if square.is_available(building_instance.player_id, building_instance.building.industry_type):
+                square.add_building(building_instance)
 
-
-def isBrewery(target):
-    if not(isTradingHub(target)) and not(isinstance(target, City)):
-        return None
+def is_brewery(target):
+    if not(is_trading_hub(target)) and not(isinstance(target, City)):
+        return False
 
     for square in target.squares:
         if square.building_instance is not None and square.building_instance.building.industry_type == IndustryType.BREWERY:
-            return square.building_instance
+            return True
 
-    return None
+    return False
 
-def isTradingHub(target):
-    if isinstance(target, TradingHub):
-        return target
+def is_trading_hub(target):
+    return isinstance(target, TradingHub)
 
-def isIronWorks(target):
+def is_iron_works(target):
     if not(isinstance(target, City)):
-        return None 
+        return False 
 
     for square in target.squares:
         if square.building_instance is not None and square.building_instance.building.industry_type == IndustryType.IRONWORKS:
-            return square.building_instance
+            return True
 
-    return None
+    return False
 
-def isCoalMine(target):
-    if isTradingHub(target):
-        return target
+def is_coal_mine(target):
+    if is_trading_hub(target):
+        return True
 
     if not(isinstance(target, City)):
-        return None
+        return False
     
     for square in target.squares:
         if square.building_instance is not None and square.building_instance.building.industry_type == IndustryType.COALMINE:
-            return square.building_instance
+            return True
 
-    return None
+    return False
+
+def node_clean_up(node):
+    if is_trading_hub(node):
+        return node  
+    else:
+        return node.building_instance
 
 def BFS(starting_point, check, full_search = False): # used when searching for resources and links to markets
         pq = []
@@ -276,12 +280,12 @@ def BFS(starting_point, check, full_search = False): # used when searching for r
             hash_map[node[0]] = True
             if dist_cutoff != -1 and node[1] > dist_cutoff:
                 return nodes
-            elif check(node[0]) is not None:
+            elif check(node[0]):
                 if full_search:
-                    nodes.append(check(node[0]))
+                    nodes.append(node_clean_up(node[0]))
                 else:
                     dist_cutoff = node[1]
-                    nodes.append(check(node[0]))
+                    nodes.append(node_clean_up(node[0]))
 
             elif isinstance(node[0], City):
                 for link in node[0].adjacent: 
@@ -291,13 +295,11 @@ def BFS(starting_point, check, full_search = False): # used when searching for r
                 for city in node[0].cities:
                     if hash_map.get(city) != True:
                         pq.append((city, node[1] + 1))
-            else:
-                pass
 
         return nodes
 
 class Board: 
-    def createLocations(self, number_of_players): # basically creates the whole map
+    def create_locations(self, number_of_players): # basically creates the whole map
         stoke_on_trent = City("Stoke-On-Trent")
         leek = City("Leek")
         belper = City("Belper")
@@ -321,76 +323,76 @@ class Board:
         unnamed_city0 = City("City0")
         unnamed_city1 = City("City1")
 
-        stoke_on_trent.addSquare([IndustryType.MANUFACTORY, IndustryType.COTTONMILL])
-        stoke_on_trent.addSquare([IndustryType.POTTERY, IndustryType.IRONWORKS])
-        stoke_on_trent.addSquare([IndustryType.COTTONMILL])
+        stoke_on_trent.add_square([IndustryType.MANUFACTORY, IndustryType.COTTONMILL])
+        stoke_on_trent.add_square([IndustryType.POTTERY, IndustryType.IRONWORKS])
+        stoke_on_trent.add_square([IndustryType.COTTONMILL])
 
-        leek.addSquare([IndustryType.MANUFACTORY, IndustryType.COTTONMILL])
-        leek.addSquare([IndustryType.MANUFACTORY, IndustryType.COALMINE])
+        leek.add_square([IndustryType.MANUFACTORY, IndustryType.COTTONMILL])
+        leek.add_square([IndustryType.MANUFACTORY, IndustryType.COALMINE])
 
-        belper.addSquare([IndustryType.MANUFACTORY, IndustryType.COTTONMILL])
-        belper.addSquare([IndustryType.COALMINE])
-        belper.addSquare([IndustryType.POTTERY])
+        belper.add_square([IndustryType.MANUFACTORY, IndustryType.COTTONMILL])
+        belper.add_square([IndustryType.COALMINE])
+        belper.add_square([IndustryType.POTTERY])
 
-        stone.addSquare([IndustryType.MANUFACTORY, IndustryType.BREWERY])
-        stone.addSquare([IndustryType.COTTONMILL, IndustryType.COALMINE])
+        stone.add_square([IndustryType.MANUFACTORY, IndustryType.BREWERY])
+        stone.add_square([IndustryType.COTTONMILL, IndustryType.COALMINE])
 
-        uttoxeter.addSquare([IndustryType.COTTONMILL, IndustryType.BREWERY])
-        uttoxeter.addSquare([IndustryType.MANUFACTORY, IndustryType.BREWERY])
+        uttoxeter.add_square([IndustryType.COTTONMILL, IndustryType.BREWERY])
+        uttoxeter.add_square([IndustryType.MANUFACTORY, IndustryType.BREWERY])
 
-        derby.addSquare([IndustryType.MANUFACTORY, IndustryType.BREWERY])
-        derby.addSquare([IndustryType.MANUFACTORY, IndustryType.COTTONMILL])
-        derby.addSquare([IndustryType.IRONWORKS])
+        derby.add_square([IndustryType.MANUFACTORY, IndustryType.BREWERY])
+        derby.add_square([IndustryType.MANUFACTORY, IndustryType.COTTONMILL])
+        derby.add_square([IndustryType.IRONWORKS])
 
-        burton_on_trent.addSquare([IndustryType.COTTONMILL, IndustryType.COALMINE])
-        burton_on_trent.addSquare([IndustryType.BREWERY])
+        burton_on_trent.add_square([IndustryType.COTTONMILL, IndustryType.COALMINE])
+        burton_on_trent.add_square([IndustryType.BREWERY])
 
-        tamworth.addSquare([IndustryType.MANUFACTORY, IndustryType.COALMINE])
-        tamworth.addSquare([IndustryType.MANUFACTORY, IndustryType.COALMINE])
+        tamworth.add_square([IndustryType.MANUFACTORY, IndustryType.COALMINE])
+        tamworth.add_square([IndustryType.MANUFACTORY, IndustryType.COALMINE])
 
-        walsall.addSquare([IndustryType.IRONWORKS, IndustryType.COTTONMILL])
-        walsall.addSquare([IndustryType.COTTONMILL, IndustryType.BREWERY])
+        walsall.add_square([IndustryType.IRONWORKS, IndustryType.COTTONMILL])
+        walsall.add_square([IndustryType.COTTONMILL, IndustryType.BREWERY])
 
-        birmingham.addSquare([IndustryType.MANUFACTORY, IndustryType.COTTONMILL])
-        birmingham.addSquare([IndustryType.COTTONMILL])
-        birmingham.addSquare([IndustryType.IRONWORKS])
-        birmingham.addSquare([IndustryType.COTTONMILL])
+        birmingham.add_square([IndustryType.MANUFACTORY, IndustryType.COTTONMILL])
+        birmingham.add_square([IndustryType.COTTONMILL])
+        birmingham.add_square([IndustryType.IRONWORKS])
+        birmingham.add_square([IndustryType.COTTONMILL])
 
-        nuneaton.addSquare([IndustryType.COTTONMILL, IndustryType.BREWERY])
-        nuneaton.addSquare([IndustryType.MANUFACTORY, IndustryType.COALMINE])
+        nuneaton.add_square([IndustryType.COTTONMILL, IndustryType.BREWERY])
+        nuneaton.add_square([IndustryType.MANUFACTORY, IndustryType.COALMINE])
 
-        coventry.addSquare([IndustryType.POTTERY])
-        coventry.addSquare([IndustryType.COTTONMILL, IndustryType.COALMINE])
-        coventry.addSquare([IndustryType.IRONWORKS, IndustryType.COTTONMILL])
+        coventry.add_square([IndustryType.POTTERY])
+        coventry.add_square([IndustryType.COTTONMILL, IndustryType.COALMINE])
+        coventry.add_square([IndustryType.IRONWORKS, IndustryType.COTTONMILL])
 
-        redditch.addSquare([IndustryType.COTTONMILL, IndustryType.COALMINE])
-        redditch.addSquare([IndustryType.IRONWORKS])
+        redditch.add_square([IndustryType.COTTONMILL, IndustryType.COALMINE])
+        redditch.add_square([IndustryType.IRONWORKS])
 
-        stafford.addSquare([IndustryType.COTTONMILL, IndustryType.BREWERY])
-        stafford.addSquare([IndustryType.POTTERY])
+        stafford.add_square([IndustryType.COTTONMILL, IndustryType.BREWERY])
+        stafford.add_square([IndustryType.POTTERY])
 
-        cannock.addSquare([IndustryType.COTTONMILL, IndustryType.COALMINE])
-        cannock.addSquare([IndustryType.COALMINE])
+        cannock.add_square([IndustryType.COTTONMILL, IndustryType.COALMINE])
+        cannock.add_square([IndustryType.COALMINE])
 
-        unnamed_city0.addSquare([IndustryType.BREWERY])
+        unnamed_city0.add_square([IndustryType.BREWERY])
 
-        wolverhampton.addSquare([IndustryType.COTTONMILL])
-        wolverhampton.addSquare([IndustryType.COTTONMILL, IndustryType.COALMINE])
+        wolverhampton.add_square([IndustryType.COTTONMILL])
+        wolverhampton.add_square([IndustryType.COTTONMILL, IndustryType.COALMINE])
 
-        coalbrookdale.addSquare([IndustryType.IRONWORKS, IndustryType.BREWERY])
-        coalbrookdale.addSquare([IndustryType.IRONWORKS])
-        coalbrookdale.addSquare([IndustryType.COALMINE])
+        coalbrookdale.add_square([IndustryType.IRONWORKS, IndustryType.BREWERY])
+        coalbrookdale.add_square([IndustryType.IRONWORKS])
+        coalbrookdale.add_square([IndustryType.COALMINE])
 
-        dudley.addSquare([IndustryType.COALMINE])
-        dudley.addSquare([IndustryType.IRONWORKS])
+        dudley.add_square([IndustryType.COALMINE])
+        dudley.add_square([IndustryType.IRONWORKS])
 
-        kidderminster.addSquare([IndustryType.MANUFACTORY, IndustryType.COALMINE])
-        kidderminster.addSquare([IndustryType.MANUFACTORY])
+        kidderminster.add_square([IndustryType.MANUFACTORY, IndustryType.COALMINE])
+        kidderminster.add_square([IndustryType.MANUFACTORY])
 
-        worcester.addSquare([IndustryType.MANUFACTORY])
-        worcester.addSquare([IndustryType.MANUFACTORY])
+        worcester.add_square([IndustryType.MANUFACTORY])
+        worcester.add_square([IndustryType.MANUFACTORY])
 
-        unnamed_city1.addSquare([IndustryType.BREWERY])
+        unnamed_city1.add_square([IndustryType.BREWERY])
         
         nottingham = TradingHub("Nottingham", (BonusType.VICTORY_POINTS, 3))
         oxford = TradingHub("Oxford", (BonusType.INCOME, 2))
@@ -456,32 +458,32 @@ class Board:
         if number_of_players == 2:
             sublist = hub_industries[:5]
             random.shuffle(sublist)
-            shrewsbury.addSquare(Square(sublist[0], shrewsbury))
-            gloucester.addSquare(Square(sublist[1], gloucester))
-            gloucester.addSquare(Square(sublist[2], gloucester))
-            oxford.addSquare(Square(sublist[3], oxford))
-            oxford.addSquare(Square(sublist[4], oxford))
+            shrewsbury.add_square(Square(sublist[0], shrewsbury))
+            gloucester.add_square(Square(sublist[1], gloucester))
+            gloucester.add_square(Square(sublist[2], gloucester))
+            oxford.add_square(Square(sublist[3], oxford))
+            oxford.add_square(Square(sublist[4], oxford))
         elif number_of_players == 3:
             sublist = hub_industries[:7]
             random.shuffle(sublist)
-            shrewsbury.addSquare(Square(sublist[0], shrewsbury))
-            gloucester.addSquare(Square(sublist[1], gloucester))
-            gloucester.addSquare(Square(sublist[2], gloucester))
-            oxford.addSquare(Square(sublist[3], oxford))
-            oxford.addSquare(Square(sublist[4], oxford))
-            warrington.addSquare(Square(sublist[5], warrington))
-            warrington.addSquare(Square(sublist[6], warrington))
+            shrewsbury.add_square(Square(sublist[0], shrewsbury))
+            gloucester.add_square(Square(sublist[1], gloucester))
+            gloucester.add_square(Square(sublist[2], gloucester))
+            oxford.add_square(Square(sublist[3], oxford))
+            oxford.add_square(Square(sublist[4], oxford))
+            warrington.add_square(Square(sublist[5], warrington))
+            warrington.add_square(Square(sublist[6], warrington))
         else:
             random.shuffle(hub_industries)
-            shrewsbury.addSquare(Square(hub_industries[0], shrewsbury))
-            gloucester.addSquare(Square(hub_industries[1], gloucester))
-            gloucester.addSquare(Square(hub_industries[2], gloucester))
-            oxford.addSquare(Square(hub_industries[3], oxford))
-            oxford.addSquare(Square(hub_industries[4], oxford))
-            warrington.addSquare(Square(hub_industries[5], warrington))
-            warrington.addSquare(Square(hub_industries[6], warrington))
-            nottingham.addSquare(Square(hub_industries[7], nottingham))
-            nottingham.addSquare(Square(hub_industries[8], nottingham))
+            shrewsbury.add_square(Square(hub_industries[0], shrewsbury))
+            gloucester.add_square(Square(hub_industries[1], gloucester))
+            gloucester.add_square(Square(hub_industries[2], gloucester))
+            oxford.add_square(Square(hub_industries[3], oxford))
+            oxford.add_square(Square(hub_industries[4], oxford))
+            warrington.add_square(Square(hub_industries[5], warrington))
+            warrington.add_square(Square(hub_industries[6], warrington))
+            nottingham.add_square(Square(hub_industries[7], nottingham))
+            nottingham.add_square(Square(hub_industries[8], nottingham))
 
         for connection in connections:
             cities = connection[0]
@@ -526,5 +528,5 @@ class Board:
         self.trading_hubs = []
         self.links = [] 
 
-        self.createLocations(number_of_players)
+        self.create_locations(number_of_players)
 
